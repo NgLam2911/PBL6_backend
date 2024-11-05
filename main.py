@@ -1,5 +1,5 @@
 from flask import Flask
-from api.v1 import v1service
+from api import APIv1
 from rtmp.rtmp import loader
 from command import command_thread, command_handler
 import asyncio
@@ -11,7 +11,7 @@ host = "0.0.0.0" # Open to all connections
 port = 80
 
 def api_thread():
-    app.register_blueprint(v1service)
+    app.register_blueprint(APIv1)
     app.run(debug=True, host=host, port=port, use_reloader=False)
     
 def rtmp_thread():
