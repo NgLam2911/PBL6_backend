@@ -1,4 +1,4 @@
-import v1
+import api.v1 as v1
 from flask_restx import fields
 
 api = v1.api
