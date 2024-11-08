@@ -1,6 +1,6 @@
 from _utils import Singleton
-from pymongo import MongoClient
-from constant import DetectStatusCode as DSC, SortOrder
+from pymongo import MongoClient, DESCENDING
+from constant import DetectStatusCode as DSC
 import time
 
 class Database(Singleton):
@@ -46,7 +46,7 @@ class Database(Singleton):
         with self.connect() as client:
             db = client[self.db_name]
             collection = db['detect_data']
-            cursor = collection.find({'cameraId': cameraId}).sort('beginTime', SortOrder.DESCENDING)
+            cursor = collection.find({'cameraId': cameraId}).sort('beginTime', DESCENDING)
             return self.cursor2array(cursor)
         
     def getDetectDataByUser(self, username: str):
@@ -58,7 +58,7 @@ class Database(Singleton):
             collection = db['detect_data']
             cursor = collection.find(
                 {'cameraId': {'$in': [camera['cameraId'] for camera in cameras]}}
-            ).sort('beginTime', SortOrder.DESCENDING)
+            ).sort('beginTime', DESCENDING)
             return self.cursor2array(cursor)
         
     def updateDetectData(self, uuid: str, statusCode: int):
@@ -80,14 +80,14 @@ class Database(Singleton):
             cursor = collection.find({
                 'beginTimeStamp': {'$gte': beginTimeStamp}, 
                 'endTimeStamp': {'$lte': endTimeStamp}
-            }).sort('beginTime', SortOrder.DESCENDING)
+            }).sort('beginTime', DESCENDING)
             return self.cursor2array(cursor)
         
     def getDetectDataByStatusCode(self, statusCode: int):
         with self.connect() as client:
             db = client[self.db_name]
             collection = db['detect_data']
-            cursor = collection.find({'statusCode': statusCode}).sort('beginTime', SortOrder.DESCENDING)
+            cursor = collection.find({'statusCode': statusCode}).sort('beginTime', DESCENDING)
             return self.cursor2array(cursor)
         
     # Auth
