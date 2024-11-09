@@ -12,10 +12,10 @@ db = Database()
 
 auth_api = api.namespace('auth', description='Auth operations')
 detect_api = api.namespace('detect', description='Detect operations')
+camera_api = api.namespace('camera', description='Camera operations')
 
 @auth_api.route('/login')
 @auth_api.doc(description='Login to the system, return a token')
-@auth_api.response(HTTPStatus.BAD_REQUEST, 'Bad request') 
 class Login(Resource):
     @auth_api.expect(parsers.user_parser)
     @auth_api.marshal_with(models.login_success_model, code=HTTPStatus.OK)
@@ -36,7 +36,6 @@ class Login(Resource):
     
 @auth_api.route('/register')
 @auth_api.doc(description='Register a new user')
-@auth_api.response(HTTPStatus.BAD_REQUEST, 'Bad request')
 class Register(Resource):
     @auth_api.expect(parsers.user_parser)
     @auth_api.marshal_with(models.register_success_model, code=HTTPStatus.OK)
@@ -53,8 +52,6 @@ class Register(Resource):
     
 @auth_api.route('changePassword')
 @auth_api.doc(description='Change password of a user')
-@auth_api.response(HTTPStatus.BAD_REQUEST, 'Bad request')
-@auth_api.response(HTTPStatus.UNAUTHORIZED, 'Unauthorized')
 class ChangePassword(Resource):
     @auth_api.expect(parsers.changepwd_parser)
     @auth_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
@@ -72,7 +69,7 @@ class ChangePassword(Resource):
         return {'message': 'Password changed'}, HTTPStatus.OK
     
 @detect_api.route('/report')
-@auth_api.response(HTTPStatus.BAD_REQUEST, 'Bad request')
+@detect_api.doc(description='Report a detected action')
 class Report(Resource):
     @detect_api.expect(parsers.report_parser)
     @detect_api.marshal_with(models.report_model, code=HTTPStatus.OK)
@@ -91,8 +88,7 @@ class Report(Resource):
         return {'actionId': actionId}, HTTPStatus.OK
     
 @detect_api.route('/getall')
-@detect_api.response(HTTPStatus.BAD_REQUEST, 'Bad request')
-@detect_api.response(HTTPStatus.UNAUTHORIZED, 'Unauthorized')
+@detect_api.doc(description='Get all detect data')
 class GetAllDetect(Resource):
     @detect_api.expect(parsers.detect_getAll_parser)
     @detect_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
@@ -121,8 +117,7 @@ class GetAllDetect(Resource):
         return data, HTTPStatus.OK
     
 @detect_api.route('/get')
-@detect_api.response(HTTPStatus.BAD_REQUEST, 'Bad request')
-@detect_api.response(HTTPStatus.UNAUTHORIZED, 'Unauthorized')
+@detect_api.doc(description='Get a specific detect data')
 class GetDetect(Resource):
     @detect_api.expect(parsers.detect_get_parser)
     @detect_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
@@ -139,6 +134,47 @@ class GetDetect(Resource):
         if len(data) == 0:
             return {'error': 'Action not found'}, HTTPStatus.NOT_FOUND
         return data[0], HTTPStatus.OK
+    
+# TODO: All of this API method need database structure update to be able to implement  
+    
+@camera_api.route('/register')
+@camera_api.doc(description='Use to assign a new camera hardware with new ID and Linking Code')
+class RegisterCamera(Resource):
+    def get(self):
+        pass
+    
+@camera_api.route('/get')
+@camera_api.doc(description='Get camera information')
+class GetCamera(Resource):
+    def get(self):
+        pass
+    
+@camera_api.route('/getall')
+@camera_api.doc(description='Get all cameras that a user has access to')
+class GetAllCamera(Resource):
+    def get(self):
+        pass
+    
+@camera_api.route('/rename')
+@camera_api.doc(description='Rename a camera')
+class RenameCamera(Resource):
+    def post(self):
+        pass
+
+@camera_api.route('/delete')
+@camera_api.doc(description='Delete a camera')
+class DeleteCamera(Resource):
+    def delete(self):
+        pass
+    
+@camera_api.route('/link')
+@camera_api.doc(description='Link a camera hardware with a camera ID to a user with a linking code')
+class LinkCamera(Resource):
+    def post(self):
+        pass
+    
+    
+
         
 
 

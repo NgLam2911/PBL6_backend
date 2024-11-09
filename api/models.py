@@ -41,5 +41,4 @@ detectData_model = api.model('DetectData', {
 
 
 
-
     

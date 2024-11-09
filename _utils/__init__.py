@@ -15,3 +15,8 @@ def hms2unix(hours: int = 0, minutes: int = 0, seconds: int = 0) -> int:
 
 def unixNow() -> int:
     return int(time.time())
+
+# Decorator to mark a function as internal
+def internal(func):
+    func.__internal__ = True
+    return func
