@@ -18,3 +18,8 @@ detect_get_parser = reqparse.RequestParser()
 detect_get_parser.add_argument('token', type=str, required=True, help='Authentication token')
 detect_get_parser.add_argument('actionId', type=str, required=True, help='UUID of action')
 
+changepwd_parser = reqparse.RequestParser()
+changepwd_parser.add_argument('username', type=str, required=True, help='Username')
+changepwd_parser.add_argument('oldPassword', type=str, required=True, help='Old password')
+changepwd_parser.add_argument('newPassword', type=str, required=True, help='New password')
+

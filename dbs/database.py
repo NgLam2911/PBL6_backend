@@ -178,6 +178,12 @@ class Database(Singleton):
             cursor = collection.find({'username': username})
             return self.cursor2array(cursor)
         
+    def changePassword(self, username: str, password: str):
+        with self.connect() as client:
+            db = client[self.db_name]
+            collection = db['users']
+            collection.update_one({'username': username}, {'$set': {'password': password}})
+        
     # Linking cameras to users things
     
     def newLink(self, cameraId: str, linkCode: str):

@@ -15,6 +15,10 @@ error_model = api.model('LoginFail', {
     'error': fields.String(required=True, description='Error')
 })
 
+success_model = api.model('Success', {
+    'message': fields.String(required=True, description='Infomation')
+}) # Only use this model for lazy response
+
 authenticate_fail_model = api.model('AuthenticateFail', {
     'error': fields.String(required=True, description='Error', default='Authentication failed')
 })
@@ -34,6 +38,8 @@ detectData_model = api.model('DetectData', {
     'endTime': fields.Integer(required=True, description='End of reported action time in unix timestamp'),
     'statusCode': fields.Integer(required=True, description='Status code')
 })
+
+
 
 
     
