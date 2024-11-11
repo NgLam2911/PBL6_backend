@@ -8,4 +8,7 @@ class DetectStatusCode(IntEnum):
     TIMED_OUT = 4
     ERROR = 5
     
-    
+class CameraStatusCode(IntEnum):
+    UNKNOWN = 0
+    NOT_LINKED = 1
+    LINKED = 2
