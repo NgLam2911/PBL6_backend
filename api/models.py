@@ -39,6 +39,16 @@ detectData_model = api.model('DetectData', {
     'statusCode': fields.Integer(required=True, description='Status code')
 })
 
+register_camera_model = api.model('RegisterCamera', {
+    'cameraId': fields.String(required=True, description='Camera ID'),
+    'linkingCode': fields.String(required=True, description='Linking code')
+})
 
+camera_model = api.model('GetCamera', {
+    'cameraId': fields.String(required=True, description='Camera ID'),
+    'name': fields.String(required=True, description='Camera name'),
+    'username': fields.String(required=True, description='Username'),
+    'status': fields.String(required=True, description='Camera status')
+})
 
     

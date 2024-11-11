@@ -5,10 +5,16 @@ import base64
 import time
 
 def generateToken():
-    return base64.b64encode(generateUUID().encode()).decode()
+    return base64.b64encode(generateUUID().encode()).decode().replace('-', '')
 
 def generateUUID():
     return str(uuid_generator.uuid4())
+
+def generateCameraId():
+    return generateUUID()[:8]
+
+def generateLinkingCode():
+    return generateUUID()[:6]
 
 def hms2unix(hours: int = 0, minutes: int = 0, seconds: int = 0) -> int:
     return hours * 3600 + minutes * 60 + seconds

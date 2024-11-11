@@ -68,7 +68,7 @@ class Database(Singleton):
             )
     
     @internal    
-    def _loginByToken(self, loginToken: str) -> list:
+    def _getByToken(self, loginToken: str) -> list:
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['users']
@@ -76,7 +76,7 @@ class Database(Singleton):
             return self._c2a(cursor)
         
     def loginByToken(self, loginToken: str) -> bool:
-        return len(self._loginByToken(loginToken)) > 0
+        return len(self._getByToken(loginToken)) > 0
     authenticate = loginByToken
         
     def deleteUser(self, username: str):
@@ -95,6 +95,12 @@ class Database(Singleton):
     
     def getUser(self, username: str) -> None|dict:
         user = self._getUser(username)
+        if len(user) == 0:
+            return None
+        return user[0]
+    
+    def getUserByToken(self, loginToken: str) -> None|dict:
+        user = self._getByToken(loginToken)
         if len(user) == 0:
             return None
         return user[0]
@@ -159,15 +165,29 @@ class Database(Singleton):
             collection = db['cameras']
             collection.update_one({'cameraId': cameraId}, {'$set': {'linkCode': linkCode}})
   
-    def linkCamera(self, cameraId: str, username: str, linkCode: str) -> bool:
+    def linkCamera(self, username: str, linkCode: str) -> bool:
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['cameras']
-            cursor = collection.find({'cameraId': cameraId, 'linkCode': linkCode, 'status': CSC.NOT_LINKED})
+            cursor = collection.find({'linkCode': linkCode, 'status': CSC.NOT_LINKED})
             if len(self._c2a(cursor)) == 0:
                 return False
+            cameraId = self._c2a(cursor)[0]['cameraId']
             collection.update_one({'cameraId': cameraId}, {'$set': {'username': username, 'status': CSC.LINKED, 'linkCode': ""}})
             return True
+        
+    def updateCameraName(self, cameraId: str, cameraName: str):
+        with self._connect() as client:
+            db = client[self.db_name]
+            collection = db['cameras']
+            collection.update_one({'cameraId': cameraId}, {'$set': {'cameraName': cameraName}})
+    changeCameraName = renameCamera = updateCameraName
+    
+    def deleteCamera(self, cameraId: str):
+        with self._connect() as client:
+            db = client[self.db_name]
+            collection = db['cameras']
+            collection.delete_one({'cameraId': cameraId})
     
     # Detect Data things
     def insertDetectData(self, uuid: str, cameraId: str, beginTimeStamp: int, endTimeStamp: int, statusCode: int = DSC.UNKNOWN):

@@ -3,6 +3,7 @@ from flask_restx import Api, Resource, fields
 from dbs import Database
 import api.parsers as parsers
 import _utils
+from constant import CameraStatusCode as CSC
 from http import HTTPStatus
 
 v1service = Blueprint('api/v1', __name__, url_prefix='/api/v1')
@@ -25,14 +26,9 @@ class Login(Resource):
         username = args['username']
         password = args['password']
         result = db.loginUser(username, password)
-        if len(result) > 0:
-            token = result[0]['loginToken']
-            if (token == "") or (result[0]['tokenExpire'] < _utils.unixNow()):
-                token = _utils.generateToken()
-                expireTime = _utils.unixNow() + _utils.hms2unix(hours=10)
-                db.updateUserToken(username, token, expireTime)
-            return {'token': token}, HTTPStatus.OK
-        return {'error': 'Invalid username or password'}, HTTPStatus.BAD_REQUEST
+        if result is None:
+            return {'error': 'Invalid username or password'}, HTTPStatus.BAD_REQUEST
+        return {'token': result}, HTTPStatus.OK
     
 @auth_api.route('/register')
 @auth_api.doc(description='Register a new user')
@@ -45,9 +41,9 @@ class Register(Resource):
         username = args['username']
         password = args['password']
         check = db.getUser(username)
-        if len(check) > 0:
-            return {'error': 'Username already exists'}, HTTPStatus.BAD_REQUEST
-        db.createUser(username, password)
+        if check is not None:
+            return {'error': 'User already exists'}, HTTPStatus.BAD_REQUEST
+        db.registerUser(username, password)
         return {'message': 'User registered'}, HTTPStatus.OK
     
 @auth_api.route('changePassword')
@@ -63,8 +59,8 @@ class ChangePassword(Resource):
         oldPassword = args['oldPassword']
         newPassword = args['newPassword']
         user = db.loginUser(username, oldPassword)
-        if len(user) == 0:
-            return {'error': 'Invalid username or password'}, HTTPStatus.UNAUTHORIZED
+        if user is None:
+            return {'error': 'Invalid username or password'}, HTTPStatus.BAD_REQUEST
         db.changePassword(username, newPassword)
         return {'message': 'Password changed'}, HTTPStatus.OK
     
@@ -82,7 +78,7 @@ class Report(Resource):
         actionId = _utils.generateUUID()
         # Check if cameraId exists
         camera = db.getCamera(cameraId)
-        if len(camera) == 0:
+        if camera is None:
             return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
         db.insertDetectData(actionId, cameraId, beginTime, endTime)
         return {'actionId': actionId}, HTTPStatus.OK
@@ -97,21 +93,21 @@ class GetAllDetect(Resource):
     def get(self):
         args = parsers.detect_getAll_parser.parse_args()
         token = args['token']
-        user = db.loginByToken(token)
-        if len(user) == 0:
+        auth = db.authenticate(token)
+        if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
-        pass
+        user = db.getUserByToken(token)
         cameraId = args['cameraId']
         camera = None
         if cameraId is not None:
             camera = db.getCamera(cameraId)
-            if len(camera) == 0:
+            if camera is None:
                 return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
-            userCam = db.getUserCameras(user[0]['username'])
-            if camera[0]['cameraId'] not in [c['cameraId'] for c in userCam]:
-                return {'error': "This user doesn't have permission to access this camera"}, HTTPStatus.UNAUTHORIZED
+            userCam = camera['username']
+            if userCam != user['username']:
+                return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
         if camera is None:
-            data = db.getDetectDataByUser(user[0]['username'])
+            data = db.getDetectDataByUser(user['username'])
         else:
             data = db.getDetectDataByCameraId(cameraId)
         return data, HTTPStatus.OK
@@ -126,52 +122,136 @@ class GetDetect(Resource):
     def get(self):
         args = parsers.detect_get_parser.parse_args()
         token = args['token']
-        user = db.loginByToken(token)
-        if len(user) == 0:
+        auth = db.authenticate(token)
+        if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         actionId = args['actionId']
         data = db.getDetectData(actionId)
-        if len(data) == 0:
-            return {'error': 'Action not found'}, HTTPStatus.NOT_FOUND
-        return data[0], HTTPStatus.OK
+        camera = db.getCamera(data['cameraId'])
+        user = db.getUserByToken(token)
+        if user['username'] != camera['username']:
+            return {'error': 'You do not have access to this data'}, HTTPStatus.UNAUTHORIZED
+        if data is None:
+            return {'error': 'Invalid actionId'}, HTTPStatus.BAD_REQUEST
+        return data, HTTPStatus.OK
     
 # TODO: All of this API method need database structure update to be able to implement  
     
 @camera_api.route('/register')
 @camera_api.doc(description='Use to assign a new camera hardware with new ID and Linking Code')
 class RegisterCamera(Resource):
+    @camera_api.marshal_with(models.register_camera_model, code=HTTPStatus.OK)
     def get(self):
-        pass
-    
+        cameraId = _utils.generateCameraId()
+        linkingCode = _utils.generateLinkingCode()
+        db.registerCamera(cameraId=cameraId, linkingCode=linkingCode, status=CSC.NOT_LINKED)
+        return {'cameraId': cameraId, 'linkingCode': linkingCode}, HTTPStatus.OK
+        
 @camera_api.route('/get')
 @camera_api.doc(description='Get camera information')
 class GetCamera(Resource):
+    @camera_api.expect(parsers.camera_parser)
+    @camera_api.marshal_with(models.camera_model, code=HTTPStatus.OK)
+    @camera_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
+    @camera_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
     def get(self):
-        pass
+        args = parsers.get_camera_parser.parse_args()
+        token = args['token']
+        cameraId = args['cameraId']
+        auth = db.authenticate(token)
+        if not auth:
+            return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
+        camera = db.getCamera(cameraId)
+        if camera is None:
+            return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
+        user = db.getUserByToken(token)
+        if camera['username'] != user['username']:
+            return {'error': 'You do not have access to this camera'}, HTTPStatus.UNAUTHORIZED
+        return camera, HTTPStatus.OK
     
 @camera_api.route('/getall')
 @camera_api.doc(description='Get all cameras that a user has access to')
 class GetAllCamera(Resource):
+    @camera_api.expect(parsers.get_all_camera_parser)
+    @camera_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
+    @camera_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
+    @camera_api.marshal_with([models.camera_model], code=HTTPStatus.OK)
     def get(self):
-        pass
+        args = parsers.get_all_camera_parser.parse_args()
+        token = args['token']
+        auth = db.authenticate(token)
+        if not auth:
+            return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
+        user = db.getUserByToken(token)
+        cameras = db.getUserCameras(user['username'])
+        return cameras, HTTPStatus.OK
     
 @camera_api.route('/rename')
 @camera_api.doc(description='Rename a camera')
 class RenameCamera(Resource):
+    @camera_api.expect(parsers.rename_camera_parser)
+    @camera_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
+    @camera_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
+    @camera_api.marshal_with(models.success_model, code=HTTPStatus.OK)
     def post(self):
-        pass
+        args = parsers.rename_camera_parser.parse_args()
+        token = args['token']
+        cameraId = args['cameraId']
+        name = args['name']
+        auth = db.authenticate(token)
+        if not auth:
+            return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
+        camera = db.getCamera(cameraId)
+        if camera is None:
+            return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
+        user = db.getUserByToken(token)
+        if user['username'] != camera['username']:
+            return {'error': 'You do not have access to this camera'}, HTTPStatus.UNAUTHORIZED
+        db.renameCamera(cameraId, name)
 
 @camera_api.route('/delete')
 @camera_api.doc(description='Delete a camera')
 class DeleteCamera(Resource):
+    @camera_api.expect(parsers.camera_parser)
+    @camera_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
+    @camera_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
+    @camera_api.marshal_with(models.success_model, code=HTTPStatus.OK)
     def delete(self):
-        pass
+        args = parsers.camera_parser.parse_args()
+        token = args['token']
+        cameraId = args['cameraId']
+        auth = db.authenticate(token)
+        if not auth:
+            return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
+        camera = db.getCamera(cameraId)
+        if camera is None:
+            return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
+        user = db.getUserByToken(token)
+        if user['username'] != camera['username']:
+            return {'error': 'You do not have access to this camera'}, HTTPStatus.UNAUTHORIZED
+        db.deleteCamera(cameraId)
+        return {'message': 'Camera deleted'}, HTTPStatus.OK
+        
     
 @camera_api.route('/link')
 @camera_api.doc(description='Link a camera hardware with a camera ID to a user with a linking code')
 class LinkCamera(Resource):
+    @camera_api.expect(parsers.link_camera_parser)
+    @camera_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
+    @camera_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
+    @camera_api.marshal_with(models.success_model, code=HTTPStatus.OK)
     def post(self):
-        pass
+        args = parsers.link_camera_parser.parse_args()
+        token = args['token']
+        linkingCode = args['linkingCode']
+        auth = db.authenticate(token)
+        if not auth:
+            return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
+        user = db.getUserByToken(token)
+        result = db.linkCamera(user['username'], linkingCode)
+        if result:
+            return {'message': 'Camera linked'}, HTTPStatus.OK
+        return {'error': 'Invalid linking code'}, HTTPStatus.BAD_REQUEST
     
     
 

@@ -23,3 +23,21 @@ changepwd_parser.add_argument('username', type=str, required=True, help='Usernam
 changepwd_parser.add_argument('oldPassword', type=str, required=True, help='Old password')
 changepwd_parser.add_argument('newPassword', type=str, required=True, help='New password')
 
+camera_parser = reqparse.RequestParser()
+camera_parser.add_argument('token', type=str, required=True, help='Authentication token')
+camera_parser.add_argument('cameraId', type=str, required=True, help='Camera ID')
+
+get_all_camera_parser = reqparse.RequestParser()
+get_all_camera_parser.add_argument('token', type=str, required=True, help='Authentication token')
+
+rename_camera_parser = reqparse.RequestParser()
+rename_camera_parser.add_argument('token', type=str, required=True, help='Authentication token')
+rename_camera_parser.add_argument('cameraId', type=str, required=True, help='Camera ID')
+rename_camera_parser.add_argument('name', type=str, required=True, help='New camera name')
+
+link_camera_parser = reqparse.RequestParser()
+link_camera_parser.add_argument('token', type=str, required=True, help='Authentication token')
+link_camera_parser.add_argument('linkingCode', type=str, required=True, help='Linking code')
+
+
+
