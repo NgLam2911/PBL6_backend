@@ -3,8 +3,9 @@ from flask_restx import Api, Resource, fields
 from dbs import Database
 import api.parsers as parsers
 import _utils
-from constant import CameraStatusCode as CSC
+from constant import CameraStatusCode as CSC, DetectStatusCode as DSC
 from http import HTTPStatus
+import werkzeug
 
 v1service = Blueprint('api/v1', __name__, url_prefix='/api/v1')
 api = Api(v1service, version='0.0.1', title='V1 API', description='Indev API')
@@ -82,7 +83,28 @@ class Report(Resource):
             return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
         db.insertDetectData(actionId, cameraId, beginTime, endTime)
         return {'actionId': actionId}, HTTPStatus.OK
-    
+
+@detect_api.route('/video')
+@detect_api.doc(description='Upload a video of a detected action')
+class UploadVideo(Resource):
+    @detect_api.expect(parsers.upload_parser)
+    @detect_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
+    @detect_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
+    @detect_api.marshal_with(models.success_model, code=HTTPStatus.OK)
+    def post(self):
+        args = parsers.upload_parser.parse_args()
+        actionId = args['actionId']
+        file = args['file']
+        file_ext = file.filename.split('.')[-1]
+        action = db.getDetectData(actionId)
+        if action is None:
+            return {'error': 'Invalid actionId'}, HTTPStatus.BAD_REQUEST
+        if not isinstance(file, werkzeug.datastructures.FileStorage):
+            return {'error': 'Invalid file'}, HTTPStatus.BAD_REQUEST
+        file.save(f'./videos/{actionId}.{file_ext}')
+        db.updateDetectData(actionId, DSC.RECEIVED)
+        return {'message': 'Video uploaded'}, HTTPStatus.OK
+
 @detect_api.route('/getall')
 @detect_api.doc(description='Get all detect data')
 class GetAllDetect(Resource):

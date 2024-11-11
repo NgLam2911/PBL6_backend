@@ -39,5 +39,9 @@ link_camera_parser = reqparse.RequestParser()
 link_camera_parser.add_argument('token', type=str, required=True, help='Authentication token')
 link_camera_parser.add_argument('linkingCode', type=str, required=True, help='Linking code')
 
+upload_parser = reqparse.RequestParser()
+upload_parser.add_argument('actionId', type=str, required=True, help='Action ID')
+upload_parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files', required=True, help='Video file')
+
 
 
