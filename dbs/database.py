@@ -28,7 +28,7 @@ class Database(Singleton):
                            authSource=self.auth_source)
         
     # AUTH DB OPERATIONS
-    def createUser(self, username: str, password: str, loginToken: str = "", tokenExpire: int = -1) -> None:
+    def createUser(self, username: str, password: str, loginToken: str = "", tokenExpire: int = -1, sensitivity: int = 0) -> None:
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['users']
@@ -37,6 +37,7 @@ class Database(Singleton):
                 'password': password,
                 'loginToken': loginToken,
                 'tokenExpire': tokenExpire,
+                'sensitivity': sensitivity,
             })
     registerUser = createUser
     
@@ -111,6 +112,18 @@ class Database(Singleton):
             collection = db['users']
             collection.update_one({'username': username}, {'$set': {'password': password}})
     updatePassword = changePassword
+    
+    def updateUserSensitivity(self, username: str, sensitivity: int):
+        with self._connect() as client:
+            db = client[self.db_name]
+            collection = db['users']
+            collection.update_one({'username': username}, {'$set': {'sensitivity': sensitivity}})
+            
+    def getUserSensitivity(self, username: str) -> int:
+        user = self._getUser(username)
+        if len(user) == 0:
+            return -1
+        return user[0]['sensitivity']
     
     # CAMERA OPERATIONS
     def createCamera(self, cameraId: str, cameraName: str, username: str = "", linkCode: str = "", status: int = CSC.UNKNOWN):

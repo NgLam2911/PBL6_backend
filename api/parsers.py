@@ -9,6 +9,7 @@ report_parser = reqparse.RequestParser()
 report_parser.add_argument('cameraId', type=str, required=True, help='Camera ID')
 report_parser.add_argument('beginTime', type=int, required=True, help='Begin of reported action time in unix timestamp')
 report_parser.add_argument('endTime', type=int, required=True, help='End of reported action time in unix timestamp')
+report_parser.add_argument('senitivity', type=int, required=True, help='Senitivity of detection')
 
 detect_getAll_parser = reqparse.RequestParser()
 detect_getAll_parser.add_argument('token', type=str, required=True, help='Authentication token')
@@ -27,8 +28,8 @@ camera_parser = reqparse.RequestParser()
 camera_parser.add_argument('token', type=str, required=True, help='Authentication token')
 camera_parser.add_argument('cameraId', type=str, required=True, help='Camera ID')
 
-get_all_camera_parser = reqparse.RequestParser()
-get_all_camera_parser.add_argument('token', type=str, required=True, help='Authentication token')
+token_parser = reqparse.RequestParser()
+token_parser.add_argument('token', type=str, required=True, help='Authentication token')
 
 rename_camera_parser = reqparse.RequestParser()
 rename_camera_parser.add_argument('token', type=str, required=True, help='Authentication token')
@@ -42,6 +43,10 @@ link_camera_parser.add_argument('linkingCode', type=str, required=True, help='Li
 upload_parser = reqparse.RequestParser()
 upload_parser.add_argument('actionId', type=str, required=True, help='Action ID')
 upload_parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files', required=True, help='Video file')
+
+senitivity_parser = reqparse.RequestParser()
+senitivity_parser.add_argument('token', type=str, required=True, help='Authentication token')
+senitivity_parser.add_argument('senitivity', type=int, required=True, help='Senitivity value')
 
 
 

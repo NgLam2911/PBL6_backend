@@ -65,6 +65,37 @@ class ChangePassword(Resource):
         db.changePassword(username, newPassword)
         return {'message': 'Password changed'}, HTTPStatus.OK
     
+@auth_api.route('/senitivity')
+@auth_api.doc(description='Change senitivity of a user')
+class UserSenitivity(Resource):
+    @auth_api.expect(parsers.senitivity_parser)
+    @auth_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
+    @auth_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
+    @auth_api.marshal_with(models.success_model, code=HTTPStatus.OK)
+    def post(self):
+        args = parsers.senitivity_parser.parse_args()
+        token = args['token']
+        senitivity = args['senitivity']
+        auth = db.authenticate(token)
+        if not auth:
+            return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
+        user = db.getUserByToken(token)
+        db.updateUserSensitivity(user['username'], senitivity)
+        return {'message': 'Senitivity changed'}, HTTPStatus.OK
+    
+    @auth_api.expect(parsers.token_parser)
+    @auth_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
+    @auth_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
+    @auth_api.marshal_with(models.senitivity_model, code=HTTPStatus.OK)
+    def get(self):
+        args = parsers.token_parser.parse_args()
+        token = args['token']
+        auth = db.authenticate(token)
+        if not auth:
+            return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
+        user = db.getUserByToken(token)
+        return {'senitivity': user['senitivity']}, HTTPStatus.OK
+    
 @detect_api.route('/report')
 @detect_api.doc(description='Report a detected action')
 class Report(Resource):
@@ -76,11 +107,18 @@ class Report(Resource):
         cameraId = args['cameraId']
         beginTime = args['beginTime']
         endTime = args['endTime']
+        senitivity = args['senitivity']
         actionId = _utils.generateUUID()
         # Check if cameraId exists
         camera = db.getCamera(cameraId)
         if camera is None:
             return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
+        user = db.getUser(camera['username'])
+        if user is None:
+            return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
+        userSenitivity = user['senitivity']
+        if senitivity < userSenitivity:
+            return {'error': 'Senitivity too low'}, HTTPStatus.BAD_REQUEST
         db.insertDetectData(actionId, cameraId, beginTime, endTime)
         return {'actionId': actionId}, HTTPStatus.OK
 
@@ -95,13 +133,15 @@ class UploadVideo(Resource):
         args = parsers.upload_parser.parse_args()
         actionId = args['actionId']
         file = args['file']
-        file_ext = file.filename.split('.')[-1]
         action = db.getDetectData(actionId)
         if action is None:
             return {'error': 'Invalid actionId'}, HTTPStatus.BAD_REQUEST
         if not isinstance(file, werkzeug.datastructures.FileStorage):
             return {'error': 'Invalid file'}, HTTPStatus.BAD_REQUEST
-        file.save(f'./videos/{actionId}.{file_ext}')
+        file_ext = file.filename.split('.')[-1]
+        if (file_ext != 'mp4'):
+            return {'error': 'Invalid or not supported file type'}, HTTPStatus.BAD_REQUEST
+        file.save(f'./videos/{actionId}.mp4')
         db.updateDetectData(actionId, DSC.RECEIVED)
         return {'message': 'Video uploaded'}, HTTPStatus.OK
 
@@ -177,7 +217,7 @@ class GetCamera(Resource):
     @camera_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
     @camera_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
     def get(self):
-        args = parsers.get_camera_parser.parse_args()
+        args = parsers.camera_parser.parse_args()
         token = args['token']
         cameraId = args['cameraId']
         auth = db.authenticate(token)
@@ -194,12 +234,12 @@ class GetCamera(Resource):
 @camera_api.route('/getall')
 @camera_api.doc(description='Get all cameras that a user has access to')
 class GetAllCamera(Resource):
-    @camera_api.expect(parsers.get_all_camera_parser)
+    @camera_api.expect(parsers.token_parser)
     @camera_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
     @camera_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
     @camera_api.marshal_with([models.camera_model], code=HTTPStatus.OK)
     def get(self):
-        args = parsers.get_all_camera_parser.parse_args()
+        args = parsers.token_parser.parse_args()
         token = args['token']
         auth = db.authenticate(token)
         if not auth:
