@@ -314,10 +314,3 @@ class LinkCamera(Resource):
         if result:
             return {'message': 'Camera linked'}, HTTPStatus.OK
         return {'error': 'Invalid linking code'}, HTTPStatus.BAD_REQUEST
-    
-    
-
-        
-
-
-

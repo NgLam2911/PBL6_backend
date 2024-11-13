@@ -1,5 +1,6 @@
 from flask import Flask
 from api import APIv1
+from app import app as webapp
 from rtmp.rtmp import loader
 from command import command_thread, command_handler
 import asyncio
@@ -12,6 +13,7 @@ port = 80
 
 def api_thread():
     app.register_blueprint(APIv1)
+    app.register_blueprint(webapp)
     app.run(debug=True, host=host, port=port, use_reloader=False)
     
 def rtmp_thread():
