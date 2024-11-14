@@ -35,9 +35,9 @@ pip install -r reqs.txt
 * In some systems that have limited space of RAM, you may need to disable package cache to avoid running out of memory. You can do this by running `pip install --no-cache-dir -r reqs.txt`
 
 ## Create a `.env` file for configuration
-* Create a file named `<something>.env` in the root directory of the project. The `<something>` can be anything you want, but it should have the `.env` extension at the end. For example: `config.env` or `production.env`, only one `.env` file is needed. Its content should be like this:
+* Create a file named `.env` in the root directory of the project. It should contain the following configurations:
 ```env
-host=localhost # The IP address where the server is running
+host=0.0.0.0 # The IP address where the server is running
 port=80 # The port where the server is listening to
 db_HOST =mongodb://localhost:27017/ # The connection string to the MongoDB database
 db_auth_user =admin # The username to authenticate to the database
