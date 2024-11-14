@@ -6,6 +6,7 @@ import _utils
 from constant import CameraStatusCode as CSC, DetectStatusCode as DSC
 from http import HTTPStatus
 import werkzeug
+import os
 
 v1service = Blueprint('api/v1', __name__, url_prefix='/api/v1')
 api = Api(v1service, version='0.0.1', title='V1 API', description='Indev API')
@@ -141,7 +142,8 @@ class UploadVideo(Resource):
         file_ext = file.filename.split('.')[-1]
         if (file_ext != 'mp4'):
             return {'error': 'Invalid or not supported file type'}, HTTPStatus.BAD_REQUEST
-        file.save(f'./videos/{actionId}.mp4')
+        save_path = os.getenv('video_save_path')
+        file.save(os.path.join(save_path, f'{actionId}.mp4'))
         db.updateDetectData(actionId, DSC.RECEIVED)
         return {'message': 'Video uploaded'}, HTTPStatus.OK
 

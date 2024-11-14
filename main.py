@@ -5,11 +5,16 @@ from rtmp.rtmp import loader
 from command import command_thread, command_handler
 import asyncio
 import threading
+import dotenv
+import os
 
+if not dotenv.load_dotenv():
+    print("No .env file found. Please create one !")
+    exit(1)
 app = Flask(__name__)
 
-host = "0.0.0.0" # Open to all connections
-port = 80
+host = os.getenv("HOST")
+port = os.getenv("PORT")
 
 def api_thread():
     app.register_blueprint(APIv1)

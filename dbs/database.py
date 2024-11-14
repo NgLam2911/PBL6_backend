@@ -3,14 +3,15 @@ import _utils
 from pymongo import MongoClient, DESCENDING
 from constant import DetectStatusCode as DSC, CameraStatusCode as CSC
 import time
+import os
 
 class Database(Singleton):
     
-    host = 'mongodb://localhost:27017/'
-    auth_user = 'admin'
-    auth_pswd = '12345678'
-    auth_source = 'admin'
-    db_name = 'test'
+    host = os.getenv("db_host")
+    auth_user = os.getenv("db_auth_user")
+    auth_pswd = os.getenv("db_auth_pswd")
+    auth_source = os.getenv("db_auth_source")
+    db_name = os.getenv("db_name")
     
     def __init__(self):
         pass
