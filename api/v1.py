@@ -21,12 +21,12 @@ camera_api = api.namespace('camera', description='Camera operations')
 @auth_api.doc(description='Login to the system, return a token')
 class Login(Resource):
     @auth_api.expect(parsers.user_parser)
-    @auth_api.marshal_with(models.login_success_model, code=HTTPStatus.OK)
-    @auth_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
+    @auth_api.response(HTTPStatus.OK, 'Login successful', models.login_success_model)
+    @auth_api.response(HTTPStatus.BAD_REQUEST, 'Invalid username or password', models.error_model)
     def post(self):
         args = parsers.user_parser.parse_args()
         username = args['username']
-        password = args['password']
+        password = args['password']                                                                                 
         result = db.loginUser(username, password)
         if result is None:
             return {'error': 'Invalid username or password'}, HTTPStatus.BAD_REQUEST
@@ -36,8 +36,8 @@ class Login(Resource):
 @auth_api.doc(description='Register a new user')
 class Register(Resource):
     @auth_api.expect(parsers.user_parser)
-    @auth_api.marshal_with(models.register_success_model, code=HTTPStatus.OK)
-    @auth_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
+    @auth_api.response(HTTPStatus.OK, 'User registered', models.register_success_model)
+    @auth_api.response(HTTPStatus.BAD_REQUEST, 'User already exists', models.error_model)
     def post(self):
         args = parsers.user_parser.parse_args()
         username = args['username']
@@ -52,9 +52,8 @@ class Register(Resource):
 @auth_api.doc(description='Change password of a user')
 class ChangePassword(Resource):
     @auth_api.expect(parsers.changepwd_parser)
-    @auth_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
-    @auth_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
-    @auth_api.marshal_with(models.success_model, code=HTTPStatus.OK)
+    @auth_api.response(HTTPStatus.BAD_REQUEST, 'Invalid username or password', models.error_model)
+    @auth_api.response(HTTPStatus.OK, 'Password changed', models.success_model)
     def post(self):
         args = parsers.changepwd_parser.parse_args()
         username = args['username']
@@ -70,9 +69,8 @@ class ChangePassword(Resource):
 @auth_api.doc(description='Change senitivity of a user')
 class UserSenitivity(Resource):
     @auth_api.expect(parsers.senitivity_parser)
-    @auth_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
-    @auth_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
-    @auth_api.marshal_with(models.success_model, code=HTTPStatus.OK)
+    @auth_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
+    @auth_api.response(HTTPStatus.OK, 'Senitivity changed', models.success_model)
     def post(self):
         args = parsers.senitivity_parser.parse_args()
         token = args['token']
@@ -85,9 +83,8 @@ class UserSenitivity(Resource):
         return {'message': 'Senitivity changed'}, HTTPStatus.OK
     
     @auth_api.expect(parsers.token_parser)
-    @auth_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
-    @auth_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
-    @auth_api.marshal_with(models.senitivity_model, code=HTTPStatus.OK)
+    @auth_api.response(HTTPStatus.OK, 'Senitivity', models.senitivity_model)
+    @auth_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
     def get(self):
         args = parsers.token_parser.parse_args()
         token = args['token']
@@ -101,8 +98,8 @@ class UserSenitivity(Resource):
 @detect_api.doc(description='Report a detected action')
 class Report(Resource):
     @detect_api.expect(parsers.report_parser)
-    @detect_api.marshal_with(models.report_model, code=HTTPStatus.OK)
-    @detect_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
+    @detect_api.response(HTTPStatus.OK, 'Action reported', models.report_model)
+    @detect_api.response(HTTPStatus.BAD_REQUEST, 'Error', models.error_model)
     def post(self):
         args = parsers.report_parser.parse_args()
         cameraId = args['cameraId']
@@ -127,9 +124,8 @@ class Report(Resource):
 @detect_api.doc(description='Upload a video of a detected action')
 class UploadVideo(Resource):
     @detect_api.expect(parsers.upload_parser)
-    @detect_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
-    @detect_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
-    @detect_api.marshal_with(models.success_model, code=HTTPStatus.OK)
+    @detect_api.response(HTTPStatus.BAD_REQUEST, 'Error', models.error_model)
+    @detect_api.response(HTTPStatus.OK, 'Video uploaded', models.success_model)
     def post(self):
         args = parsers.upload_parser.parse_args()
         actionId = args['actionId']
@@ -151,9 +147,9 @@ class UploadVideo(Resource):
 @detect_api.doc(description='Get all detect data')
 class GetAllDetect(Resource):
     @detect_api.expect(parsers.detect_getAll_parser)
-    @detect_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
-    @detect_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
-    @detect_api.marshal_with([models.detectData_model], code=HTTPStatus.OK)
+    @detect_api.response(HTTPStatus.OK, 'Detect data', [models.detectData_model])
+    @detect_api.response(HTTPStatus.BAD_REQUEST, 'Invalid cameraId', models.error_model)
+    @detect_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
     def get(self):
         args = parsers.detect_getAll_parser.parse_args()
         token = args['token']
@@ -180,9 +176,9 @@ class GetAllDetect(Resource):
 @detect_api.doc(description='Get a specific detect data')
 class GetDetect(Resource):
     @detect_api.expect(parsers.detect_get_parser)
-    @detect_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
-    @detect_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
-    @detect_api.marshal_with(models.detectData_model, code=HTTPStatus.OK)
+    @detect_api.response(HTTPStatus.OK, 'Detect data', models.detectData_model)
+    @detect_api.response(HTTPStatus.BAD_REQUEST, 'Invalid actionId', models.error_model)
+    @detect_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
     def get(self):
         args = parsers.detect_get_parser.parse_args()
         token = args['token']
@@ -204,7 +200,7 @@ class GetDetect(Resource):
 @camera_api.route('/register')
 @camera_api.doc(description='Use to assign a new camera hardware with new ID and Linking Code')
 class RegisterCamera(Resource):
-    @camera_api.marshal_with(models.register_camera_model, code=HTTPStatus.OK)
+    @camera_api.response(HTTPStatus.OK, 'Camera registered', models.register_camera_model)
     def get(self):
         cameraId = _utils.generateCameraId()
         linkingCode = _utils.generateLinkingCode()
@@ -215,9 +211,9 @@ class RegisterCamera(Resource):
 @camera_api.doc(description='Get camera information')
 class GetCamera(Resource):
     @camera_api.expect(parsers.camera_parser)
-    @camera_api.marshal_with(models.camera_model, code=HTTPStatus.OK)
-    @camera_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
-    @camera_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
+    @camera_api.response(HTTPStatus.OK, 'Camera information', models.camera_model)
+    @camera_api.response(HTTPStatus.BAD_REQUEST, 'Invalid cameraId', models.error_model)
+    @camera_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
     def get(self):
         args = parsers.camera_parser.parse_args()
         token = args['token']
@@ -237,9 +233,8 @@ class GetCamera(Resource):
 @camera_api.doc(description='Get all cameras that a user has access to')
 class GetAllCamera(Resource):
     @camera_api.expect(parsers.token_parser)
-    @camera_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
-    @camera_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
-    @camera_api.marshal_with([models.camera_model], code=HTTPStatus.OK)
+    @camera_api.response(HTTPStatus.OK, 'Cameras', [models.camera_model])
+    @camera_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
     def get(self):
         args = parsers.token_parser.parse_args()
         token = args['token']
@@ -254,9 +249,9 @@ class GetAllCamera(Resource):
 @camera_api.doc(description='Rename a camera')
 class RenameCamera(Resource):
     @camera_api.expect(parsers.rename_camera_parser)
-    @camera_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
-    @camera_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
-    @camera_api.marshal_with(models.success_model, code=HTTPStatus.OK)
+    @camera_api.response(HTTPStatus.BAD_REQUEST, 'Invalid cameraId', models.error_model)
+    @camera_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
+    @camera_api.response(HTTPStatus.OK, 'Camera renamed', models.success_model)
     def post(self):
         args = parsers.rename_camera_parser.parse_args()
         token = args['token']
@@ -272,14 +267,15 @@ class RenameCamera(Resource):
         if user['username'] != camera['username']:
             return {'error': 'You do not have access to this camera'}, HTTPStatus.UNAUTHORIZED
         db.renameCamera(cameraId, name)
+        return {'message': 'Camera renamed'}, HTTPStatus.OK
 
 @camera_api.route('/delete')
 @camera_api.doc(description='Delete a camera')
 class DeleteCamera(Resource):
     @camera_api.expect(parsers.camera_parser)
-    @camera_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
-    @camera_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
-    @camera_api.marshal_with(models.success_model, code=HTTPStatus.OK)
+    @camera_api.response(HTTPStatus.BAD_REQUEST, 'Invalid cameraId', models.error_model)
+    @camera_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
+    @camera_api.response(HTTPStatus.OK, 'Camera deleted', models.success_model)
     def delete(self):
         args = parsers.camera_parser.parse_args()
         token = args['token']
@@ -301,9 +297,9 @@ class DeleteCamera(Resource):
 @camera_api.doc(description='Link a camera hardware with a camera ID to a user with a linking code')
 class LinkCamera(Resource):
     @camera_api.expect(parsers.link_camera_parser)
-    @camera_api.marshal_with(models.error_model, code=HTTPStatus.BAD_REQUEST)
-    @camera_api.marshal_with(models.authenticate_fail_model, code=HTTPStatus.UNAUTHORIZED)
-    @camera_api.marshal_with(models.success_model, code=HTTPStatus.OK)
+    @camera_api.response(HTTPStatus.BAD_REQUEST, 'Invalid linking code', models.error_model)
+    @camera_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
+    @camera_api.response(HTTPStatus.OK, 'Camera linked', models.success_model)
     def post(self):
         args = parsers.link_camera_parser.parse_args()
         token = args['token']
