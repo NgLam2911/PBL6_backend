@@ -4,13 +4,14 @@ from pymongo import MongoClient, DESCENDING
 from constant import DetectStatusCode as DSC, CameraStatusCode as CSC
 import time
 import os
+from dotenv import load_dotenv
 
 class Database(Singleton):
     
-    host = os.getenv("DB_HOST")
-    db_name = os.getenv("DB_NAME")
-    
     def __init__(self):
+        load_dotenv() # FUCK LINUX
+        self.host = os.getenv("DB_HOST")
+        self.db_name = os.getenv("DB_NAME")
         if self.host is None:
             raise Exception("DB_HOST not found in environment variables")
         if self.db_name is None:
