@@ -39,12 +39,14 @@ pip install -r reqs.txt
 ```env
 host=0.0.0.0 # The IP address where the server is running
 port=80 # The port where the server is listening to
-db_host =mongodb://localhost:27017/ # The connection string to the MongoDB database
-db_auth_user =admin # The username to authenticate to the database
-db_auth_pswd =12345678 # The password to authenticate to the database
+db_host=mongodb://localhost:27017/ # The connection string to the MongoDB database
+db_auth_user=admin # The username to authenticate to the database
+db_auth_pswd=12345678 # The password to authenticate to the database
 db_auth_source=admin # The source of the authentication
 db_name=test # The name of the database
 video_save_path=videos # The path to save the uploaded videos
+rtmp_ip=0.0.0.0 # The IP address where the RTMP server is running
+rtmp_port=1935 # The port where the RTMP server is listening to
 ```
 
 ## Run the server

@@ -105,6 +105,8 @@ class SimpleServer(SimpleRTMPServer):
 async def loader():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     server = SimpleServer(output_directory=current_dir)
-    await server.create(host="0.0.0.0", port=1935)
+    host = os.getenv("rtmp_ip")
+    port = os.getenv("rtmp_port")
+    await server.create(host=host, port=port)
     await server.start()
     await server.wait_closed()
