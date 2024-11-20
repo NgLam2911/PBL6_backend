@@ -11,6 +11,10 @@ class Database(Singleton):
     db_name = os.getenv("DB_NAME")
     
     def __init__(self):
+        if self.host is None:
+            raise Exception("DB_HOST not found in environment variables")
+        if self.db_name is None:
+            raise Exception("DB_NAME not found in environment variables")
         pass
     
     @internal
