@@ -65,25 +65,25 @@ class ChangePassword(Resource):
         db.changePassword(username, newPassword)
         return {'message': 'Password changed'}, HTTPStatus.OK
     
-@auth_api.route('/senitivity')
-@auth_api.doc(description='Change senitivity of a user')
-class UserSenitivity(Resource):
-    @auth_api.expect(parsers.senitivity_parser)
+@auth_api.route('/sensitivity')
+@auth_api.doc(description='Change sensitivity of a user')
+class UserSensitivity(Resource):
+    @auth_api.expect(parsers.sensitivity_parser)
     @auth_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
-    @auth_api.response(HTTPStatus.OK, 'Senitivity changed', models.success_model)
+    @auth_api.response(HTTPStatus.OK, 'sensitivity changed', models.success_model)
     def post(self):
-        args = parsers.senitivity_parser.parse_args()
+        args = parsers.sensitivity_parser.parse_args()
         token = args['token']
-        senitivity = args['senitivity']
+        sensitivity = args['sensitivity']
         auth = db.authenticate(token)
         if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         user = db.getUserByToken(token)
-        db.updateUserSensitivity(user['username'], senitivity)
-        return {'message': 'Senitivity changed'}, HTTPStatus.OK
+        db.updateUserSensitivity(user['username'], sensitivity)
+        return {'message': 'sensitivity changed'}, HTTPStatus.OK
     
     @auth_api.expect(parsers.token_parser)
-    @auth_api.response(HTTPStatus.OK, 'Senitivity', models.senitivity_model)
+    @auth_api.response(HTTPStatus.OK, 'sensitivity', models.sensitivity_model)
     @auth_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
     def get(self):
         args = parsers.token_parser.parse_args()
@@ -92,7 +92,7 @@ class UserSenitivity(Resource):
         if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         user = db.getUserByToken(token)
-        return {'senitivity': user['senitivity']}, HTTPStatus.OK
+        return {'sensitivity': user['sensitivity']}, HTTPStatus.OK
     
 @detect_api.route('/report')
 @detect_api.doc(description='Report a detected action')
@@ -170,7 +170,16 @@ class GetAllDetect(Resource):
             data = db.getDetectDataByUser(user['username'])
         else:
             data = db.getDetectDataByCameraId(cameraId)
-        return data, HTTPStatus.OK
+        result = []
+        for d in data:
+            result.append({
+                'uuid': d['uuid'],
+                'cameraId': d['cameraId'],
+                'beginTime': d['beginTime'],
+                'endTime': d['endTime'],
+                'statusCode': d['statusCode']
+            })
+        return result, HTTPStatus.OK
     
 @detect_api.route('/get')
 @detect_api.doc(description='Get a specific detect data')
@@ -193,9 +202,13 @@ class GetDetect(Resource):
             return {'error': 'You do not have access to this data'}, HTTPStatus.UNAUTHORIZED
         if data is None:
             return {'error': 'Invalid actionId'}, HTTPStatus.BAD_REQUEST
-        return data, HTTPStatus.OK
-    
-# TODO: All of this API method need database structure update to be able to implement  
+        return {
+            'uuid': data['uuid'],
+            'cameraId': data['cameraId'],
+            'beginTime': data['beginTime'],
+            'endTime': data['endTime'],
+            'statusCode': data['statusCode']
+        }, HTTPStatus.OK
     
 @camera_api.route('/register')
 @camera_api.doc(description='Use to assign a new camera hardware with new ID and Linking Code')
@@ -204,7 +217,7 @@ class RegisterCamera(Resource):
     def get(self):
         cameraId = _utils.generateCameraId()
         linkingCode = _utils.generateLinkingCode()
-        db.registerCamera(cameraId=cameraId, linkingCode=linkingCode, status=CSC.NOT_LINKED)
+        db.registerCamera(cameraId=cameraId, cameraName="", linkCode=linkingCode, status=CSC.NOT_LINKED)
         return {'cameraId': cameraId, 'linkingCode': linkingCode}, HTTPStatus.OK
         
 @camera_api.route('/get')
@@ -227,7 +240,12 @@ class GetCamera(Resource):
         user = db.getUserByToken(token)
         if camera['username'] != user['username']:
             return {'error': 'You do not have access to this camera'}, HTTPStatus.UNAUTHORIZED
-        return camera, HTTPStatus.OK
+        return {
+            'cameraId': camera['cameraId'],
+            'name': camera['cameraName'],
+            'username': camera['username'],
+            'status': camera['status']
+        }, HTTPStatus.OK
     
 @camera_api.route('/getall')
 @camera_api.doc(description='Get all cameras that a user has access to')
@@ -243,7 +261,15 @@ class GetAllCamera(Resource):
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         user = db.getUserByToken(token)
         cameras = db.getUserCameras(user['username'])
-        return cameras, HTTPStatus.OK
+        result = []
+        for camera in cameras:
+            result.append({
+                'cameraId': camera['cameraId'],
+                'name': camera['cameraName'],
+                'username': camera['username'],
+                'status': camera['status']
+            })
+        return result, HTTPStatus.OK
     
 @camera_api.route('/rename')
 @camera_api.doc(description='Rename a camera')

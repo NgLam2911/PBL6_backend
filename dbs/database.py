@@ -8,9 +8,6 @@ import os
 class Database(Singleton):
     
     host = os.getenv("db_host")
-    auth_user = os.getenv("db_auth_user")
-    auth_pswd = os.getenv("db_auth_pswd")
-    auth_source = os.getenv("db_auth_source")
     db_name = os.getenv("db_name")
     
     def __init__(self):
@@ -23,10 +20,7 @@ class Database(Singleton):
     
     @internal
     def _connect(self):
-        return MongoClient(self.host,
-                           username=self.auth_user,
-                           password=self.auth_pswd,
-                           authSource=self.auth_source)
+        return MongoClient(self.host)
         
     # AUTH DB OPERATIONS
     def createUser(self, username: str, password: str, loginToken: str = "", tokenExpire: int = -1, sensitivity: int = 0) -> None:
@@ -135,8 +129,8 @@ class Database(Singleton):
                 'cameraId': cameraId,
                 'cameraName': cameraName,
                 'username': username,
-                'linkCode': "",
-                'status': 0
+                'linkCode': linkCode,
+                'status': status
             })
     registerCamera = createCamera
             
@@ -184,9 +178,10 @@ class Database(Singleton):
             db = client[self.db_name]
             collection = db['cameras']
             cursor = collection.find({'linkCode': linkCode, 'status': CSC.NOT_LINKED})
-            if len(self._c2a(cursor)) == 0:
+            data = self._c2a(cursor)
+            if len(data) == 0:
                 return False
-            cameraId = self._c2a(cursor)[0]['cameraId']
+            cameraId = data[0]['cameraId']
             collection.update_one({'cameraId': cameraId}, {'$set': {'username': username, 'status': CSC.LINKED, 'linkCode': ""}})
             return True
         

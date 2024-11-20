@@ -51,8 +51,8 @@ camera_model = api.model('GetCamera', {
     'status': fields.String(required=True, description='Camera status')
 })
 
-senitivity_model = api.model('Senitivity', {
-    'senitivity': fields.Integer(required=True, description='Senitivity value')
+sensitivity_model = api.model('Sensitivity', {
+    'sensitivity': fields.Integer(required=True, description='Sensitivity value')
 })
 
     

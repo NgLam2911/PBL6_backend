@@ -44,9 +44,9 @@ upload_parser = reqparse.RequestParser()
 upload_parser.add_argument('actionId', type=str, required=True, help='Action ID')
 upload_parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files', required=True, help='Video file')
 
-senitivity_parser = reqparse.RequestParser()
-senitivity_parser.add_argument('token', type=str, required=True, help='Authentication token')
-senitivity_parser.add_argument('senitivity', type=int, required=True, help='Senitivity value')
+sensitivity_parser = reqparse.RequestParser()
+sensitivity_parser.add_argument('token', type=str, required=True, help='Authentication token')
+sensitivity_parser.add_argument('sensitivity', type=int, required=True, help='Sensitivity value')
 
 
 
