@@ -7,8 +7,11 @@ import asyncio
 import threading
 import dotenv
 import os
+from pathlib import Path
 
-if not dotenv.load_dotenv():
+env_path = Path(__file__).resolve().parent / '.env'
+    
+if not dotenv.load_dotenv(dotenv_path=env_path):
     print("No .env file found. Please create one !")
     exit(1)
 app = Flask(__name__)
