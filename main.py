@@ -13,8 +13,8 @@ if not dotenv.load_dotenv():
     exit(1)
 app = Flask(__name__)
 
-host = os.getenv("HOST")
-port = os.getenv("PORT")
+host = os.getenv("host")
+port = os.getenv("port")
 
 def api_thread():
     app.register_blueprint(APIv1)
