@@ -7,8 +7,8 @@ import os
 
 class Database(Singleton):
     
-    host = os.getenv("db_host")
-    db_name = os.getenv("db_name")
+    host = os.getenv("DB_HOST")
+    db_name = os.getenv("DB_NAME")
     
     def __init__(self):
         pass
