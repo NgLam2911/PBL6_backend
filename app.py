@@ -1,12 +1,14 @@
 from flask import Flask, Blueprint, send_file
 import os
 from http import HTTPStatus
+from dotenv import load_dotenv
 
 app = Blueprint('app', __name__, url_prefix='/')
 
 @app.route('/video/<string:uuid>', methods=['GET'])
 def get_video(uuid):
-    path = os.getenv('video_save_path')
+    load_dotenv()
+    path = os.getenv('VIDEO_SAVE_PATH')
     file_name = os.path.join(path, f'{uuid}.mp4')
     if not os.path.exists(file_name):
         return 'Video not found', HTTPStatus.NOT_FOUND
