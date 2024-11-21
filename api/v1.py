@@ -105,7 +105,7 @@ class Report(Resource):
         cameraId = args['cameraId']
         beginTime = args['beginTime']
         endTime = args['endTime']
-        senitivity = args['senitivity']
+        sensitivity = args['sensitivity']
         actionId = _utils.generateUUID()
         # Check if cameraId exists
         camera = db.getCamera(cameraId)
@@ -114,9 +114,9 @@ class Report(Resource):
         user = db.getUser(camera['username'])
         if user is None:
             return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
-        userSenitivity = user['senitivity']
-        if senitivity < userSenitivity:
-            return {'error': 'Senitivity too low'}, HTTPStatus.BAD_REQUEST
+        userSensitivity = user['sensitivity']
+        if sensitivity < userSensitivity:
+            return {'error': 'Sensitivity too low'}, HTTPStatus.BAD_REQUEST
         db.insertDetectData(actionId, cameraId, beginTime, endTime)
         return {'actionId': actionId}, HTTPStatus.OK
 
