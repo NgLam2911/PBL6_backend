@@ -140,7 +140,7 @@ class UploadVideo(Resource):
         if (file_ext != 'mp4'):
             return {'error': 'Invalid or not supported file type'}, HTTPStatus.BAD_REQUEST
         load_dotenv()
-        save_path = os.getenv('video_save_path')
+        save_path = os.getenv('VIDEO_SAVE_PATH')
         file.save(os.path.join(save_path, f'{actionId}.mp4'))
         db.updateDetectData(actionId, DSC.RECEIVED)
         return {'message': 'Video uploaded'}, HTTPStatus.OK
