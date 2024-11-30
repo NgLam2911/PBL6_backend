@@ -177,8 +177,8 @@ class GetAllDetect(Resource):
             result.append({
                 'uuid': d['uuid'],
                 'cameraId': d['cameraId'],
-                'beginTime': d['beginTime'],
-                'endTime': d['endTime'],
+                'beginTime': d['beginTimeStamp'],
+                'endTime': d['endTimeStamp'],
                 'statusCode': d['statusCode']
             })
         return result, HTTPStatus.OK
@@ -207,8 +207,8 @@ class GetDetect(Resource):
         return {
             'uuid': data['uuid'],
             'cameraId': data['cameraId'],
-            'beginTime': data['beginTime'],
-            'endTime': data['endTime'],
+            'beginTime': data['beginTimeStamp'],
+            'endTime': data['endTimeStamp'],
             'statusCode': data['statusCode']
         }, HTTPStatus.OK
     
