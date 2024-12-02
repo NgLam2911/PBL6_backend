@@ -271,6 +271,31 @@ class Database(Singleton):
             }).sort('beginTime', DESCENDING)
             return self._c2a(cursor)
         
+    def getUserDetectDataByTimeRange(self, username: str, beginTimeStamp: int, endTimeStamp: int) -> list:
+        cameras = self.getUserCameras(username)
+        if len(cameras) == 0:
+            return []
+        with self._connect() as client:
+            db = client[self.db_name]
+            collection = db['detect_data']
+            cursor = collection.find({
+                'cameraId': {'$in': [camera['cameraId'] for camera in cameras]},
+                'beginTimeStamp': {'$gte': beginTimeStamp}, 
+                'endTimeStamp': {'$lte': endTimeStamp}
+            }).sort('beginTime', DESCENDING)
+            return self._c2a(cursor)
+        
+    def getCameraDetectDatabyTimeRange(self, cameraId: str, beginTimeStamp: int, endTimeStamp: int) -> list:
+        with self._connect() as client:
+            db = client[self.db_name]
+            collection = db['detect_data']
+            cursor = collection.find({
+                'cameraId': cameraId,
+                'beginTimeStamp': {'$gte': beginTimeStamp}, 
+                'endTimeStamp': {'$lte': endTimeStamp}
+            }).sort('beginTime', DESCENDING)
+            return self._c2a(cursor)
+        
     def getDetectDataByStatusCode(self, statusCode: int) -> list:
         with self._connect() as client:
             db = client[self.db_name]

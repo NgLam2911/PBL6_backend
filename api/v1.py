@@ -221,6 +221,47 @@ class GetDetect(Resource):
             'video': f'http://{host_access}/video/{data["uuid"]}',
             'thumbnail': f'http://{host_access}/thumbnail/{data["uuid"]}'
         }, HTTPStatus.OK
+        
+@detect_api.route('/getdetectbytime')
+@detect_api.doc(description='Get detect data by time')
+class GetDetectByTime(Resource):
+    @detect_api.expect(parsers.detectbyTime_parser)
+    @detect_api.response(HTTPStatus.OK, 'Detect data', [models.detectData_model])
+    @detect_api.response(HTTPStatus.BAD_REQUEST, 'Invalid cameraId', models.error_model)
+    @detect_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
+    def get(self):
+        args = parsers.detectbyTime_parser.parse_args()
+        token = args['token']
+        cameraId = args['cameraId']
+        beginTime = args['beginTime']
+        endTime = args['endTime']
+        auth = db.authenticate(token)
+        if not auth:
+            return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
+        user = db.getUserByToken(token)
+        if cameraId is not None:
+            camera = db.getCamera(cameraId)
+            if camera is None:
+                return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
+            if camera['username'] != user['username']:
+                return {'error': 'You do not have access to this camera'}, HTTPStatus.UNAUTHORIZED
+            data = db.getCameraDetectDatabyTimeRange(cameraId, beginTime, endTime)
+        else:
+            data = db.getUserDetectDataByTimeRange(user['username'], beginTime, endTime)
+        result = []
+        host_access = os.getenv('HOST_ACCESS')
+        for d in data:
+            result.append({
+                'uuid': d['uuid'],
+                'cameraId': d['cameraId'],
+                'beginTime': d['beginTimeStamp'],
+                'endTime': d['endTimeStamp'],
+                'statusCode': d['statusCode'],
+                'video': f'http://{host_access}/video/{d["uuid"]}',
+                'thumbnail': f'http://{host_access}/thumbnail/{d["uuid"]}'
+            })
+        return result, HTTPStatus.OK
+            
     
 @camera_api.route('/register')
 @camera_api.doc(description='Use to assign a new camera hardware with new ID and Linking Code')

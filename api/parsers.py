@@ -15,6 +15,12 @@ detect_getAll_parser = reqparse.RequestParser()
 detect_getAll_parser.add_argument('token', type=str, required=True, help='Authentication token')
 detect_getAll_parser.add_argument('cameraId', type=str, required=False, help='Camera ID')
 
+detectbyTime_parser = reqparse.RequestParser()
+detectbyTime_parser.add_argument('token', type=str, required=True, help='Authentication token')
+detectbyTime_parser.add_argument('cameraId', type=str, required=False, help='Camera ID')
+detectbyTime_parser.add_argument('beginTime', type=int, required=True, help='Begin of reported action time in unix timestamp')
+detectbyTime_parser.add_argument('endTime', type=int, required=True, help='End of reported action time in unix timestamp')
+
 detect_get_parser = reqparse.RequestParser()
 detect_get_parser.add_argument('token', type=str, required=True, help='Authentication token')
 detect_get_parser.add_argument('actionId', type=str, required=True, help='UUID of action')
