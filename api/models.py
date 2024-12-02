@@ -36,7 +36,9 @@ detectData_model = api.model('DetectData', {
     'cameraId': fields.String(required=True, description='Camera ID'),
     'beginTime': fields.Integer(required=True, description='Begin of reported action time in unix timestamp'),
     'endTime': fields.Integer(required=True, description='End of reported action time in unix timestamp'),
-    'statusCode': fields.Integer(required=True, description='Status code')
+    'statusCode': fields.Integer(required=True, description='Status code'),
+    'video': fields.String(required=True, description='Video link'),
+    'thumbnail': fields.String(required=True, description='Thumbnail link')
 })
 
 register_camera_model = api.model('RegisterCamera', {
@@ -48,6 +50,11 @@ camera_model = api.model('GetCamera', {
     'cameraId': fields.String(required=True, description='Camera ID'),
     'name': fields.String(required=True, description='Camera name'),
     'username': fields.String(required=True, description='Username'),
+    'status': fields.String(required=True, description='Camera status')
+})
+
+camera_statuscheck_model = api.model('StatusCheck', {
+    'cameraId': fields.String(required=True, description='Camera ID'),
     'status': fields.String(required=True, description='Camera status')
 })
 

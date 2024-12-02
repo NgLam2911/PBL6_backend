@@ -28,6 +28,9 @@ camera_parser = reqparse.RequestParser()
 camera_parser.add_argument('token', type=str, required=True, help='Authentication token')
 camera_parser.add_argument('cameraId', type=str, required=True, help='Camera ID')
 
+cameraId_parser = reqparse.RequestParser()
+cameraId_parser.add_argument('cameraId', type=str, required=True, help='Camera ID')
+
 token_parser = reqparse.RequestParser()
 token_parser.add_argument('token', type=str, required=True, help='Authentication token')
 

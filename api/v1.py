@@ -142,6 +142,10 @@ class UploadVideo(Resource):
         load_dotenv()
         save_path = os.getenv('VIDEO_SAVE_PATH')
         file.save(os.path.join(save_path, f'{actionId}.mp4'))
+        
+        # Create thumbnail
+        thumbnail_path = os.getenv('THUMBNAIL_SAVE_PATH')
+        _utils.createThumbnail(os.path.join(save_path, f'{actionId}.mp4'), os.path.join(thumbnail_path, f'{actionId}.jpg'))        
         db.updateDetectData(actionId, DSC.RECEIVED)
         return {'message': 'Video uploaded'}, HTTPStatus.OK
 
@@ -173,13 +177,16 @@ class GetAllDetect(Resource):
         else:
             data = db.getDetectDataByCameraId(cameraId)
         result = []
+        host_access = os.getenv('HOST_ACCESS')
         for d in data:
             result.append({
                 'uuid': d['uuid'],
                 'cameraId': d['cameraId'],
                 'beginTime': d['beginTimeStamp'],
                 'endTime': d['endTimeStamp'],
-                'statusCode': d['statusCode']
+                'statusCode': d['statusCode'],
+                'video': f'http://{host_access}/video/{d["uuid"]}',
+                'thumbnail': f'http://{host_access}/thumbnail/{d["uuid"]}'
             })
         return result, HTTPStatus.OK
     
@@ -200,6 +207,7 @@ class GetDetect(Resource):
         data = db.getDetectData(actionId)
         camera = db.getCamera(data['cameraId'])
         user = db.getUserByToken(token)
+        host_access = os.getenv('HOST_ACCESS')
         if user['username'] != camera['username']:
             return {'error': 'You do not have access to this data'}, HTTPStatus.UNAUTHORIZED
         if data is None:
@@ -209,7 +217,9 @@ class GetDetect(Resource):
             'cameraId': data['cameraId'],
             'beginTime': data['beginTimeStamp'],
             'endTime': data['endTimeStamp'],
-            'statusCode': data['statusCode']
+            'statusCode': data['statusCode'],
+            'video': f'http://{host_access}/video/{data["uuid"]}',
+            'thumbnail': f'http://{host_access}/thumbnail/{data["uuid"]}'
         }, HTTPStatus.OK
     
 @camera_api.route('/register')
@@ -340,3 +350,18 @@ class LinkCamera(Resource):
         if result:
             return {'message': 'Camera linked'}, HTTPStatus.OK
         return {'error': 'Invalid linking code'}, HTTPStatus.BAD_REQUEST
+    
+@camera_api.route('/checkstatus')
+@camera_api.doc(description='Check if a camera status. Unknow: 0, Not linked: 1, Linked: 2')
+class CheckCameraStatus(Resource):
+    @camera_api.expect(parsers.cameraId_parser)
+    @camera_api.response(HTTPStatus.BAD_REQUEST, 'Invalid cameraId', models.error_model)
+    @camera_api.response(HTTPStatus.OK, 'Camera status', models.camera_statuscheck_model)
+    def get(self):
+        args = parsers.cameraId_parser.parse_args()
+        cameraId = args['cameraId']
+        camera = db.getCamera(cameraId)
+        if camera is None:
+            return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
+        return {'cameraId': camera['cameraId'], 'status': camera['status']}, HTTPStatus.OK
+        
