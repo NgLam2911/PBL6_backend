@@ -11,6 +11,15 @@ env_path = Path(__file__).resolve().parent / '.env'
 if not dotenv.load_dotenv(dotenv_path=env_path):
     print("No .env file found. Please create one !")
     exit(1)
+    
+# Create folder for saving video and thumbnail
+vfolder = os.getenv('VIDEO_SAVE_PATH')
+if not os.path.exists(vfolder):
+    os.makedirs(vfolder)
+tfolder = os.getenv('THUMBNAIL_SAVE_PATH')
+if not os.path.exists(tfolder):
+    os.makedirs(tfolder)
+
 app = Flask(__name__)
 
 host = os.getenv("HOST")
