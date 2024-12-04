@@ -37,16 +37,22 @@ pip install -r reqs.txt
 ## Create a `.env` file for configuration
 * Create a file named `.env` in the root directory of the project. It should contain the following configurations:
 ```env
-host=0.0.0.0 # The IP address where the server is running
-port=80 # The port where the server is listening to
-db_host=mongodb://localhost:27017/ # The connection string to the MongoDB database
-db_auth_user=admin # The username to authenticate to the database
-db_auth_pswd=12345678 # The password to authenticate to the database
-db_auth_source=admin # The source of the authentication
-db_name=test # The name of the database
-video_save_path=videos # The path to save the uploaded videos
-rtmp_ip=0.0.0.0 # The IP address where the RTMP server is running
-rtmp_port=1935 # The port where the RTMP server is listening to
+# The IP address and port where the server will listen to
+# 127.0.0.1: Only the local machine can access the server
+# 0.0.0.0: Global access
+HOST=127.0.0.1
+PORT=5000
+
+# The IP address where the server will be hosted (Public IP)
+HOST_ACCESS=123.456.789.123
+
+# The MongoDB connection string
+DB_HOST=mongodb+srv://<username>:<password>@<host>/?retryWrites=true&w=majority&appName=<app_name>
+DB_NAME=<database name>
+
+# Configuration for the file storage
+VIDEO_SAVE_PATH=videos
+THUMBNAIL_SAVE_PATH=thumbnails
 ```
 
 ## Run the server
