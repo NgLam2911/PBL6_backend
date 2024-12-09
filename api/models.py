@@ -58,7 +58,11 @@ camera_statuscheck_model = api.model('StatusCheck', {
     'status': fields.String(required=True, description='Camera status')
 })
 
-sensitivity_model = api.model('Sensitivity', {
+userSettings_model = api.model('UserSettings', {
+    'username': fields.String(required=True, description='Username'),
+    'notification': fields.Boolean(required=True, description='Notification setting'),
+    'monitoring': fields.Boolean(required=True, description='Monitoring setting'),
+    'fcm_token': fields.String(required=True, description='FCM token (use for notification)'),
     'sensitivity': fields.Integer(required=True, description='Sensitivity value')
 })
 

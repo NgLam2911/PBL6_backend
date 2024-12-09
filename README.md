@@ -53,6 +53,8 @@ DB_NAME=<database name>
 # Configuration for the file storage
 VIDEO_SAVE_PATH=videos
 THUMBNAIL_SAVE_PATH=thumbnails
+# Configuration for the firebase storage
+FIREBASE_CREDENTIAL=firebase.json 
 ```
 
 ## Run the server

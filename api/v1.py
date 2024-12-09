@@ -9,10 +9,12 @@ import werkzeug
 import os
 from dotenv import load_dotenv
 
+
 v1service = Blueprint('api/v1', __name__, url_prefix='/api/v1')
-api = Api(v1service, version='0.0.1', title='V1 API', description='Indev API')
+api = Api(v1service, version='0.1.0', title='V1 API', description='Indev API')
 import api.models as models
 db = Database()
+notif = _utils.Notificator()
 
 auth_api = api.namespace('auth', description='Auth operations')
 detect_api = api.namespace('detect', description='Detect operations')
@@ -66,12 +68,32 @@ class ChangePassword(Resource):
         db.changePassword(username, newPassword)
         return {'message': 'Password changed'}, HTTPStatus.OK
     
+@auth_api.route('getsettings')
+@auth_api.doc(description='Get user settings information')
+class GetUserSettings(Resource):
+    @auth_api.expect(parsers.token_parser)
+    @auth_api.response(HTTPStatus.OK, 'User settings', models.userSettings_model)
+    @auth_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
+    def get(self):
+        args = parsers.token_parser.parse_args()
+        token = args['token']
+        if (not db.authenticate(token)):
+            return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
+        user = db.getUserByToken(token)
+        return {
+            'username': user['username'],
+            'notification': user['notification'],
+            'monitoring': user['monitoring'],
+            'fcm_token': user['fcm_token'],
+            'sensitivity': user['sensitivity']
+        }, HTTPStatus.OK
+        
 @auth_api.route('/sensitivity')
 @auth_api.doc(description='Change sensitivity of a user')
 class UserSensitivity(Resource):
     @auth_api.expect(parsers.sensitivity_parser)
     @auth_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
-    @auth_api.response(HTTPStatus.OK, 'sensitivity changed', models.success_model)
+    @auth_api.response(HTTPStatus.OK, 'Sensitivity changed', models.success_model)
     def post(self):
         args = parsers.sensitivity_parser.parse_args()
         token = args['token']
@@ -83,17 +105,56 @@ class UserSensitivity(Resource):
         db.updateUserSensitivity(user['username'], sensitivity)
         return {'message': 'sensitivity changed'}, HTTPStatus.OK
     
-    @auth_api.expect(parsers.token_parser)
-    @auth_api.response(HTTPStatus.OK, 'sensitivity', models.sensitivity_model)
+@auth_api.route('/notification')
+@auth_api.doc(description='Change notification setting of a user')
+class UserNotification(Resource):
+    @auth_api.expect(parsers.notification_parser)
     @auth_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
-    def get(self):
-        args = parsers.token_parser.parse_args()
+    @auth_api.response(HTTPStatus.OK, 'Notification setting changed', models.success_model)
+    def post(self):
+        args = parsers.notification_parser.parse_args()
         token = args['token']
+        notification = args['notification']
         auth = db.authenticate(token)
         if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         user = db.getUserByToken(token)
-        return {'sensitivity': user['sensitivity']}, HTTPStatus.OK
+        db.updateUserNotification(user['username'], notification)
+        return {'message': 'Notification setting changed'}, HTTPStatus.OK
+    
+@auth_api.route('/monitoring')
+@auth_api.doc(description='Change monitoring setting of a user')
+class UserMonitoring(Resource):
+    @auth_api.expect(parsers.monitoring_parser)
+    @auth_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
+    @auth_api.response(HTTPStatus.OK, 'Monitoring setting changed', models.success_model)
+    def post(self):
+        args = parsers.monitoring_parser.parse_args()
+        token = args['token']
+        monitoring = args['monitoring']
+        auth = db.authenticate(token)
+        if not auth:
+            return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
+        user = db.getUserByToken(token)
+        db.updateUserMonitoring(user['username'], monitoring)
+        return {'message': 'Monitoring setting changed'}, HTTPStatus.OK
+    
+@auth_api.route('/fcm')
+@auth_api.doc(description='Change FCM token of a user')
+class UserFCM(Resource):
+    @auth_api.expect(parsers.fcm_token_parser)
+    @auth_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
+    @auth_api.response(HTTPStatus.OK, 'FCM token changed', models.success_model)
+    def post(self):
+        args = parsers.fcm_token_parser.parse_args()
+        token = args['token']
+        fcm_token = args['fcm_token']
+        auth = db.authenticate(token)
+        if not auth:
+            return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
+        user = db.getUserByToken(token)
+        db.updateUserFCMToken(user['username'], fcm_token)
+        return {'message': 'FCM token changed'}, HTTPStatus.OK
     
 @detect_api.route('/report')
 @detect_api.doc(description='Report a detected action')
@@ -115,10 +176,14 @@ class Report(Resource):
         user = db.getUser(camera['username'])
         if user is None:
             return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
+        isMonitoring = user['monitoring']
+        if not isMonitoring:
+            return {'error': 'User Monitoring is disabled'}, HTTPStatus.BAD_REQUEST
         userSensitivity = user['sensitivity']
         if sensitivity < userSensitivity:
             return {'error': 'Sensitivity too low'}, HTTPStatus.BAD_REQUEST
         db.insertDetectData(actionId, cameraId, beginTime, endTime)
+        notif.onReport(user, actionId)
         return {'actionId': actionId}, HTTPStatus.OK
 
 @detect_api.route('/video')

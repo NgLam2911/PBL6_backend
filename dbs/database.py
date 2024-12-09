@@ -28,7 +28,14 @@ class Database(Singleton):
         return MongoClient(self.host)
         
     # AUTH DB OPERATIONS
-    def createUser(self, username: str, password: str, loginToken: str = "", tokenExpire: int = -1, sensitivity: int = 0) -> None:
+    def createUser(self, username: str, 
+                   password: str, 
+                   loginToken: str = "", 
+                   tokenExpire: int = -1, 
+                   sensitivity: int = 0,
+                   notification: bool = True,
+                   monitoring: bool = True,
+                   fcm_token: str = "") -> None:
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['users']
@@ -38,6 +45,9 @@ class Database(Singleton):
                 'loginToken': loginToken,
                 'tokenExpire': tokenExpire,
                 'sensitivity': sensitivity,
+                'notification': notification,
+                'monitoring': monitoring,
+                'fcm_token': fcm_token
             })
     registerUser = createUser
     
@@ -120,10 +130,46 @@ class Database(Singleton):
             collection.update_one({'username': username}, {'$set': {'sensitivity': sensitivity}})
             
     def getUserSensitivity(self, username: str) -> int:
-        user = self._getUser(username)
-        if len(user) == 0:
+        user = self.getUser(username)
+        if user is None:
             return -1
-        return user[0]['sensitivity']
+        return user['sensitivity']
+    
+    def updateUserNotification(self, username: str, notification: bool):
+        with self._connect() as client:
+            db = client[self.db_name]
+            collection = db['users']
+            collection.update_one({'username': username}, {'$set': {'notification': notification}})
+            
+    def updateUserMonitoring(self, username: str, monitoring: bool):
+        with self._connect() as client:
+            db = client[self.db_name]
+            collection = db['users']
+            collection.update_one({'username': username}, {'$set': {'monitoring': monitoring}})
+            
+    def updateUserFCMToken(self, username: str, fcm_token: str):
+        with self._connect() as client:
+            db = client[self.db_name]
+            collection = db['users']
+            collection.update_one({'username': username}, {'$set': {'fcm_token': fcm_token}})
+    
+    def isNotificationEnabled(self, username: str) -> bool:
+        user = self.getUser(username)
+        if user is None:
+            return False
+        return user['notification']
+    
+    def isMonitoringEnabled(self, username: str) -> bool:
+        user = self.getUser(username)
+        if user is None:
+            return False
+        return user['monitoring']
+    
+    def getFCMToken(self, username: str) -> str:
+        user = self.getUser(username)
+        if user is None:
+            return ""
+        return user['fcm_token']
     
     # CAMERA OPERATIONS
     def createCamera(self, cameraId: str, cameraName: str, username: str = "", linkCode: str = "", status: int = CSC.UNKNOWN):

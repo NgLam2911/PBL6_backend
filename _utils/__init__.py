@@ -1,4 +1,5 @@
 from .class_pattern import Singleton
+from .notificator import Notificator
 
 import uuid as uuid_generator
 import base64

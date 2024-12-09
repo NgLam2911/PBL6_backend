@@ -57,5 +57,18 @@ sensitivity_parser = reqparse.RequestParser()
 sensitivity_parser.add_argument('token', type=str, required=True, help='Authentication token')
 sensitivity_parser.add_argument('sensitivity', type=int, required=True, help='Sensitivity value')
 
+notification_parser = reqparse.RequestParser()
+notification_parser.add_argument('token', type=str, required=True, help='Authentication token')
+notification_parser.add_argument('notification', type=bool, required=True, help='Notification setting')
+
+monitoring_parser = reqparse.RequestParser()
+monitoring_parser.add_argument('token', type=str, required=True, help='Authentication token')
+monitoring_parser.add_argument('monitoring', type=bool, required=True, help='Monitoring setting')
+
+fcm_token_parser = reqparse.RequestParser()
+fcm_token_parser.add_argument('token', type=str, required=True, help='Authentication token')
+fcm_token_parser.add_argument('fcm_token', type=str, required=True, help='FCM token')
+
+
 
 
