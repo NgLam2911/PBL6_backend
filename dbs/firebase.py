@@ -8,9 +8,12 @@ class Firebase(Singleton):
     app: firebase_admin.App = None
     
     def __init__(self):
-        load_dotenv()
-        cred = credentials.Certificate(os.getenv("FIREBASE_CREDENTIAL"))
-        self.app = firebase_admin.initialize_app(cred)
+        if not firebase_admin._apps:
+            load_dotenv()
+            cred = credentials.Certificate(os.getenv("FIREBASE_CREDENTIAL"))
+            self.app = firebase_admin.initialize_app(cred)
+        else:
+            self.app = firebase_admin.get_app()
     
     def _send_notification(self, title: str, body: str, fcm_token: str):
         message = messaging.Message(
