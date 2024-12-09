@@ -108,7 +108,21 @@ class Database(Singleton):
         user = self._getUser(username)
         if len(user) == 0:
             return None
-        return user[0]
+        realUser = user[0]
+        # Check if a array key exists
+        if 'fcm_token' not in realUser:
+            realUser['notification'] = True
+            realUser['monitoring'] = True
+            realUser['fcm_token'] = ""
+            self._insertNewData(realUser['username'])
+        return realUser
+    
+    @internal
+    def _insertNewData(self, username: str):
+        with self._connect() as client:
+            db = client[self.db_name]
+            collection = db['users']
+            collection.update_one({'username': username}, {'$set': {'notification': True, 'monitoring': True, 'fcm_token': ""}})
     
     def getUserByToken(self, loginToken: str) -> None|dict:
         user = self._getByToken(loginToken)
@@ -128,12 +142,6 @@ class Database(Singleton):
             db = client[self.db_name]
             collection = db['users']
             collection.update_one({'username': username}, {'$set': {'sensitivity': sensitivity}})
-            
-    def getUserSensitivity(self, username: str) -> int:
-        user = self.getUser(username)
-        if user is None:
-            return -1
-        return user['sensitivity']
     
     def updateUserNotification(self, username: str, notification: bool):
         with self._connect() as client:
