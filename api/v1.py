@@ -51,7 +51,7 @@ class Register(Resource):
         db.registerUser(username, password)
         return {'message': 'User registered'}, HTTPStatus.OK
     
-@auth_api.route('changePassword')
+@auth_api.route('/changePassword')
 @auth_api.doc(description='Change password of a user')
 class ChangePassword(Resource):
     @auth_api.expect(parsers.changepwd_parser)
@@ -68,7 +68,7 @@ class ChangePassword(Resource):
         db.changePassword(username, newPassword)
         return {'message': 'Password changed'}, HTTPStatus.OK
     
-@auth_api.route('getsettings')
+@auth_api.route('/getsettings')
 @auth_api.doc(description='Get user settings information')
 class GetUserSettings(Resource):
     @auth_api.expect(parsers.token_parser)
