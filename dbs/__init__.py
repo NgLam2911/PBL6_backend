@@ -1,2 +1,2 @@
-from .database import Database
 from .firebase import Firebase
+from .database import Database
