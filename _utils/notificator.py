@@ -10,7 +10,7 @@ class Notificator(Singleton):
         isNotif = user["notification"]
         if not isNotif:
             return
-        fcmToken = user["fcmToken"]
+        fcmToken = user["fcm_token"]
         if fcmToken == "":
             return
         title = "Reported action"
