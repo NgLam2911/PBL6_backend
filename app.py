@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, send_file, send_from_directory
+from flask import Blueprint, send_file, request, Response
 import os
 from http import HTTPStatus
 from dotenv import load_dotenv
@@ -18,7 +18,34 @@ def get_video(uuid):
     if not os.path.isfile(file_path):
         return 'Invalid video', HTTPStatus.BAD_REQUEST
     
-    return send_from_directory(path, file_name, mimetype='video/mp4'), HTTPStatus.OK
+    range_header = request.headers.get('Range', None)
+    if not range_header:
+        return send_file(file_path, mimetype='video/mp4')
+    
+    size = os.path.getsize(file_path)
+    byte1, byte2 = 0, None
+
+    if range_header:
+        match = re.search(r'(\d+)-(\d*)', range_header)
+        if match:
+            byte1, byte2 = match.groups()
+            byte1 = int(byte1)
+            if byte2:
+                byte2 = int(byte2)
+    
+    length = size - byte1
+    if byte2 is not None:
+        length = byte2 - byte1 + 1
+    
+    with open(file_path, 'rb') as f:
+        f.seek(byte1)
+        data = f.read(length)
+    
+    rv = Response(data, 206, mimetype='video/mp4', content_type='video/mp4', direct_passthrough=True)
+    rv.headers.add('Content-Range', f'bytes {byte1}-{byte1 + length - 1}/{size}')
+    rv.headers.add('Accept-Ranges', 'bytes')
+    
+    return rv
 
 @app.route('/thumbnail/<string:uuid>', methods=['GET'])
 def get_thumbnail(uuid):
