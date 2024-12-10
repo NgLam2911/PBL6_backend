@@ -10,11 +10,14 @@ app = Blueprint('app', __name__, url_prefix='/')
 def get_video(uuid):
     load_dotenv()
     path = os.getenv('VIDEO_SAVE_PATH')
-    file_name = os.path.join(path, f'{uuid}.mp4')
-    if not os.path.exists(file_name):
+    file_name = f'{uuid}.mp4'
+    file_path = os.path.join(path, file_name)
+    
+    if not os.path.exists(file_path):
         return 'Video not found', HTTPStatus.NOT_FOUND
-    if not os.path.isfile(file_name):
+    if not os.path.isfile(file_path):
         return 'Invalid video', HTTPStatus.BAD_REQUEST
+    
     return send_from_directory(path, file_name, mimetype='video/mp4'), HTTPStatus.OK
 
 @app.route('/thumbnail/<string:uuid>', methods=['GET'])
