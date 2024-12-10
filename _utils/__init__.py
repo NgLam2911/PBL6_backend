@@ -24,7 +24,8 @@ def unixNow() -> int:
     return int(time.time())
 
 def unix2dmyhms(unix: int) -> str:
-    return time.strftime(r"%d/%m/%Y %H:%M:%S", time.gmtime(unix))
+    # GMT+7
+    return time.strftime(r"%d-%m-%Y %H:%M:%S", time.gmtime(unix + 25200))
 
 def createThumbnail(video_path: str, thumbnail_path: str):
     import cv2
