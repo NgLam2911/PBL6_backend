@@ -270,6 +270,8 @@ class GetDetect(Resource):
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         actionId = args['actionId']
         data = db.getDetectData(actionId)
+        if data is None:
+            return {'error': 'Invalid actionId'}, HTTPStatus.BAD_REQUEST
         camera = db.getCamera(data['cameraId'])
         user = db.getUserByToken(token)
         host_access = os.getenv('HOST_ACCESS')
