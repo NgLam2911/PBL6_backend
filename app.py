@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, send_file
+from flask import Flask, Blueprint, send_file, send_from_directory
 import os
 from http import HTTPStatus
 from dotenv import load_dotenv
@@ -15,7 +15,7 @@ def get_video(uuid):
         return 'Video not found', HTTPStatus.NOT_FOUND
     if not os.path.isfile(file_name):
         return 'Invalid video', HTTPStatus.BAD_REQUEST
-    return send_file(file_name, mimetype='video/mp4'), HTTPStatus.OK
+    return send_from_directory(file_name, mimetype='video/mp4'), HTTPStatus.OK
 
 @app.route('/thumbnail/<string:uuid>', methods=['GET'])
 def get_thumbnail(uuid):
@@ -27,7 +27,7 @@ def get_thumbnail(uuid):
         video_path = os.path.join(os.getenv('VIDEO_SAVE_PATH'), f'{uuid}.mp4')
         if os.path.exists(video_path):
             createThumbnail(video_path, file_name)
-            return send_file(file_name, as_attachment=True, mimetype='image/jpg'), HTTPStatus.OK
+            return send_file(file_name, mimetype='image/jpg'), HTTPStatus.OK
         else:
             return 'Thumbnail not found', HTTPStatus.NOT_FOUND
     if not os.path.isfile(file_name):
