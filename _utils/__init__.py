@@ -23,6 +23,9 @@ def hms2unix(hours: int = 0, minutes: int = 0, seconds: int = 0) -> int:
 def unixNow() -> int:
     return int(time.time())
 
+def unix2dmyhms(unix: int) -> str:
+    return time.strftime(r"%d/%m/%Y %H:%M:%S", time.gmtime(unix))
+
 def createThumbnail(video_path: str, thumbnail_path: str):
     import cv2
     cap = cv2.VideoCapture(video_path)

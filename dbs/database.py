@@ -288,7 +288,7 @@ class Database(Singleton):
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['detect_data']
-            cursor = collection.find({'cameraId': cameraId}).sort('beginTime', DESCENDING)
+            cursor = collection.find({'cameraId': cameraId}).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
         
     def getDetectDataByUser(self, username: str) -> list:
@@ -300,7 +300,7 @@ class Database(Singleton):
             collection = db['detect_data']
             cursor = collection.find(
                 {'cameraId': {'$in': [camera['cameraId'] for camera in cameras]}}
-            ).sort('beginTime', DESCENDING)
+            ).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
         
     def updateDetectData(self, uuid: str, statusCode: int):
@@ -322,7 +322,7 @@ class Database(Singleton):
             cursor = collection.find({
                 'beginTimeStamp': {'$gte': beginTimeStamp}, 
                 'endTimeStamp': {'$lte': endTimeStamp}
-            }).sort('beginTime', DESCENDING)
+            }).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
         
     def getUserDetectDataByTimeRange(self, username: str, beginTimeStamp: int, endTimeStamp: int) -> list:
@@ -336,7 +336,7 @@ class Database(Singleton):
                 'cameraId': {'$in': [camera['cameraId'] for camera in cameras]},
                 'beginTimeStamp': {'$gte': beginTimeStamp}, 
                 'endTimeStamp': {'$lte': endTimeStamp}
-            }).sort('beginTime', DESCENDING)
+            }).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
         
     def getCameraDetectDatabyTimeRange(self, cameraId: str, beginTimeStamp: int, endTimeStamp: int) -> list:
@@ -347,13 +347,13 @@ class Database(Singleton):
                 'cameraId': cameraId,
                 'beginTimeStamp': {'$gte': beginTimeStamp}, 
                 'endTimeStamp': {'$lte': endTimeStamp}
-            }).sort('beginTime', DESCENDING)
+            }).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
         
     def getDetectDataByStatusCode(self, statusCode: int) -> list:
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['detect_data']
-            cursor = collection.find({'statusCode': statusCode}).sort('beginTime', DESCENDING)
+            cursor = collection.find({'statusCode': statusCode}).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
     

@@ -183,7 +183,7 @@ class Report(Resource):
         if sensitivity < userSensitivity:
             return {'error': 'Sensitivity too low'}, HTTPStatus.BAD_REQUEST
         db.insertDetectData(actionId, cameraId, beginTime, endTime)
-        notif.onReport(user, actionId)
+        notif.onReport(user, beginTime)
         return {'actionId': actionId}, HTTPStatus.OK
 
 @detect_api.route('/video')
@@ -277,8 +277,6 @@ class GetDetect(Resource):
         host_access = os.getenv('HOST_ACCESS')
         if user['username'] != camera['username']:
             return {'error': 'You do not have access to this data'}, HTTPStatus.UNAUTHORIZED
-        if data is None:
-            return {'error': 'Invalid actionId'}, HTTPStatus.BAD_REQUEST
         return {
             'uuid': data['uuid'],
             'cameraId': data['cameraId'],
