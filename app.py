@@ -15,7 +15,7 @@ def get_video(uuid):
         return 'Video not found', HTTPStatus.NOT_FOUND
     if not os.path.isfile(file_name):
         return 'Invalid video', HTTPStatus.BAD_REQUEST
-    return send_file(file_name, as_attachment=True, mimetype='video/mp4'), HTTPStatus.OK
+    return send_file(file_name, mimetype='video/mp4'), HTTPStatus.OK
 
 @app.route('/thumbnail/<string:uuid>', methods=['GET'])
 def get_thumbnail(uuid):
@@ -32,4 +32,4 @@ def get_thumbnail(uuid):
             return 'Thumbnail not found', HTTPStatus.NOT_FOUND
     if not os.path.isfile(file_name):
         return 'Invalid thumbnail', HTTPStatus.BAD_REQUEST
-    return send_file(file_name, as_attachment=True, mimetype='image/jpg'), HTTPStatus.OK
+    return send_file(file_name, mimetype='image/jpg'), HTTPStatus.OK
