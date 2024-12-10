@@ -1,5 +1,6 @@
 from flask import Blueprint, send_file, request, Response
 import os
+import re
 from http import HTTPStatus
 from dotenv import load_dotenv
 from _utils import createThumbnail
