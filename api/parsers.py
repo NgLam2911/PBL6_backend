@@ -57,13 +57,23 @@ sensitivity_parser = reqparse.RequestParser()
 sensitivity_parser.add_argument('token', type=str, required=True, help='Authentication token')
 sensitivity_parser.add_argument('sensitivity', type=int, required=True, help='Sensitivity value')
 
+def str_to_bool(value):
+    if isinstance(value, bool):
+        return value
+    if value.lower() in ('true', '1', 'yes'):
+        return True
+    elif value.lower() in ('false', '0', 'no'):
+        return False
+    else:
+        raise ValueError('Boolean value expected.')
+
 notification_parser = reqparse.RequestParser()
 notification_parser.add_argument('token', type=str, required=True, help='Authentication token')
-notification_parser.add_argument('notification', type=bool, required=True, help='Notification setting')
+notification_parser.add_argument('notification', type=str_to_bool, required=True, help='Notification setting')
 
 monitoring_parser = reqparse.RequestParser()
 monitoring_parser.add_argument('token', type=str, required=True, help='Authentication token')
-monitoring_parser.add_argument('monitoring', type=bool, required=True, help='Monitoring setting')
+monitoring_parser.add_argument('monitoring', type=str_to_bool, required=True, help='Monitoring setting')
 
 fcm_token_parser = reqparse.RequestParser()
 fcm_token_parser.add_argument('token', type=str, required=True, help='Authentication token')

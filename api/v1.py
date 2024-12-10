@@ -132,7 +132,6 @@ class UserMonitoring(Resource):
         args = parsers.monitoring_parser.parse_args()
         token = args['token']
         monitoring = args['monitoring']
-        print(monitoring)
         auth = db.authenticate(token)
         if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
