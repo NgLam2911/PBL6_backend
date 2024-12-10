@@ -128,7 +128,13 @@ class Database(Singleton):
         user = self._getByToken(loginToken)
         if len(user) == 0:
             return None
-        return user[0]
+        realUser = user[0]
+        if 'fcm_token' not in realUser:
+            realUser['notification'] = True
+            realUser['monitoring'] = True
+            realUser['fcm_token'] = ""
+            self._insertNewData(realUser['username'])
+        return realUser
         
     def changePassword(self, username: str, password: str):
         with self._connect() as client:
