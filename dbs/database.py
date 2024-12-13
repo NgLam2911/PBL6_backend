@@ -290,7 +290,7 @@ class Database(Singleton):
             db = client[self.db_name]
             collection = db['detect_data']
             cursor = collection.find(
-                {'cameraId': {'$in': [camera['cameraId'] for camera in cameras]}}
+                {'cameraId': {'$in': [camera.cameraId for camera in cameras]}}
             ).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
         
@@ -332,7 +332,7 @@ class Database(Singleton):
             db = client[self.db_name]
             collection = db['detect_data']
             cursor = collection.find({
-                'cameraId': {'$in': [camera['cameraId'] for camera in cameras]},
+                'cameraId': {'$in': [camera.cameraId for camera in cameras]},
                 'beginTimeStamp': {'$gte': beginTimeStamp}, 
                 'endTimeStamp': {'$lte': endTimeStamp}
             }).sort('beginTimeStamp', DESCENDING)
