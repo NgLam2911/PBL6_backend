@@ -8,10 +8,9 @@ class Notificator(Singleton):
     def onReport(self, user: User, time: int, actionId: str):
         from dbs import Firebase
         firebase = Firebase()
-        isNotif = user["notification"]
-        if not isNotif:
+        if not user.notification:
             return
-        fcmToken = user["fcm_token"]
+        fcmToken = user.fcm_token
         if fcmToken == "":
             return
         from _utils import unix2dmyhms
