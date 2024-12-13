@@ -1,10 +1,11 @@
 from _utils import Singleton
+from dbs.entities import User
 
 class Notificator(Singleton):
     def __init__(self):
         pass
     
-    def onReport(self, user: dict, time: int):
+    def onReport(self, user: User, time: int, actionId: str):
         from dbs import Firebase
         firebase = Firebase()
         isNotif = user["notification"]
@@ -16,5 +17,5 @@ class Notificator(Singleton):
         from _utils import unix2dmyhms
         time_stamp = unix2dmyhms(time)
         title = "Reported action"
-        body = "Your camera has reported an action at " + time_stamp
+        body = "ID: " + actionId + "\nTime: " + time_stamp
         firebase._send_notification(title, body, fcmToken)

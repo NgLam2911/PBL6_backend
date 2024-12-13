@@ -81,11 +81,11 @@ class GetUserSettings(Resource):
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         user = db.getUserByToken(token)
         return {
-            'username': user['username'],
-            'notification': user['notification'],
-            'monitoring': user['monitoring'],
-            'fcm_token': user['fcm_token'],
-            'sensitivity': user['sensitivity']
+            'username': user.username,
+            'notification': user.notification,
+            'monitoring': user.monitoring,
+            'fcm_token': user.fcm_token,
+            'sensitivity': user.sensitivity
         }, HTTPStatus.OK
         
 @auth_api.route('/sensitivity')
@@ -102,7 +102,7 @@ class UserSensitivity(Resource):
         if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         user = db.getUserByToken(token)
-        db.updateUserSensitivity(user['username'], sensitivity)
+        db.updateUserSensitivity(user.username, sensitivity)
         return {'message': 'sensitivity changed'}, HTTPStatus.OK
     
 @auth_api.route('/notification')
@@ -119,7 +119,7 @@ class UserNotification(Resource):
         if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         user = db.getUserByToken(token)
-        db.updateUserNotification(user['username'], notification)
+        db.updateUserNotification(user.username, notification)
         return {'message': 'Notification setting changed'}, HTTPStatus.OK
     
 @auth_api.route('/monitoring')
@@ -136,7 +136,7 @@ class UserMonitoring(Resource):
         if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         user = db.getUserByToken(token)
-        db.updateUserMonitoring(user['username'], monitoring)
+        db.updateUserMonitoring(user.username, monitoring)
         return {'message': 'Monitoring setting changed'}, HTTPStatus.OK
     
 @auth_api.route('/fcm')
@@ -153,7 +153,7 @@ class UserFCM(Resource):
         if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         user = db.getUserByToken(token)
-        db.updateUserFCMToken(user['username'], fcm_token)
+        db.updateUserFCMToken(user.username, fcm_token)
         return {'message': 'FCM token changed'}, HTTPStatus.OK
     
 @detect_api.route('/report')
@@ -168,22 +168,21 @@ class Report(Resource):
         beginTime = args['beginTime']
         endTime = args['endTime']
         sensitivity = args['sensitivity']
+        accuracy = args['accuracy']
         actionId = _utils.generateUUID()
         # Check if cameraId exists
         camera = db.getCamera(cameraId)
         if camera is None:
             return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
-        user = db.getUser(camera['username'])
+        user = camera.user()
         if user is None:
             return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
-        isMonitoring = user['monitoring']
-        if not isMonitoring:
+        if not user.monitoring:
             return {'error': 'User Monitoring is disabled'}, HTTPStatus.BAD_REQUEST
-        userSensitivity = user['sensitivity']
-        if sensitivity < userSensitivity:
+        if sensitivity < user.sensitivity:
             return {'error': 'Sensitivity too low'}, HTTPStatus.BAD_REQUEST
-        db.insertDetectData(actionId, cameraId, beginTime, endTime)
-        notif.onReport(user, beginTime)
+        db.insertDetectData(actionId, cameraId, beginTime, endTime, accuracy=accuracy)
+        notif.onReport(user, beginTime, actionId)
         return {'actionId': actionId}, HTTPStatus.OK
 
 @detect_api.route('/video')
@@ -234,24 +233,24 @@ class GetAllDetect(Resource):
             camera = db.getCamera(cameraId)
             if camera is None:
                 return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
-            userCam = camera['username']
-            if userCam != user['username']:
+            if camera.username != user.username:
                 return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
         if camera is None:
-            data = db.getDetectDataByUser(user['username'])
+            data = db.getDetectDataByUser(user.username)
         else:
             data = db.getDetectDataByCameraId(cameraId)
         result = []
         host_access = os.getenv('HOST_ACCESS')
         for d in data:
             result.append({
-                'uuid': d['uuid'],
-                'cameraId': d['cameraId'],
-                'beginTime': d['beginTimeStamp'],
-                'endTime': d['endTimeStamp'],
-                'statusCode': d['statusCode'],
-                'video': f'http://{host_access}/video/{d["uuid"]}',
-                'thumbnail': f'http://{host_access}/thumbnail/{d["uuid"]}'
+                'uuid': d.uuid,
+                'cameraId': d.cameraId,
+                'beginTime': d.beginTimeStamp,
+                'endTime': d.endTimeStamp,
+                'statusCode': d.status,
+                'video': f'http://{host_access}/video/{d.uuid}',
+                'thumbnail': f'http://{host_access}/thumbnail/{d.uuid}',
+                'accuracy': d.accuracy
             })
         return result, HTTPStatus.OK
     
@@ -269,22 +268,22 @@ class GetDetect(Resource):
         if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         actionId = args['actionId']
-        data = db.getDetectData(actionId)
-        if data is None:
+        action = db.getDetectData(actionId)
+        if action is None:
             return {'error': 'Invalid actionId'}, HTTPStatus.BAD_REQUEST
-        camera = db.getCamera(data['cameraId'])
         user = db.getUserByToken(token)
         host_access = os.getenv('HOST_ACCESS')
-        if user['username'] != camera['username']:
+        if user.username != action.camera().username:
             return {'error': 'You do not have access to this data'}, HTTPStatus.UNAUTHORIZED
         return {
-            'uuid': data['uuid'],
-            'cameraId': data['cameraId'],
-            'beginTime': data['beginTimeStamp'],
-            'endTime': data['endTimeStamp'],
-            'statusCode': data['statusCode'],
-            'video': f'http://{host_access}/video/{data["uuid"]}',
-            'thumbnail': f'http://{host_access}/thumbnail/{data["uuid"]}'
+            'uuid': action.uuid,
+            'cameraId': action.cameraId,
+            'beginTime': action.beginTimeStamp,
+            'endTime': action.endTimeStamp,
+            'statusCode': action.status,
+            'video': f'http://{host_access}/video/{action.uuid}',
+            'thumbnail': f'http://{host_access}/thumbnail/{action.uuid}',
+            'accuracy': action.accuracy
         }, HTTPStatus.OK
         
 @detect_api.route('/getdetectbytime')
@@ -308,22 +307,23 @@ class GetDetectByTime(Resource):
             camera = db.getCamera(cameraId)
             if camera is None:
                 return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
-            if camera['username'] != user['username']:
+            if camera.username != user.username:
                 return {'error': 'You do not have access to this camera'}, HTTPStatus.UNAUTHORIZED
-            data = db.getCameraDetectDatabyTimeRange(cameraId, beginTime, endTime)
+            data = db.getCameraDetectDataByTimeRange(cameraId, beginTime, endTime)
         else:
-            data = db.getUserDetectDataByTimeRange(user['username'], beginTime, endTime)
+            data = db.getUserDetectDataByTimeRange(user.username, beginTime, endTime)
         result = []
         host_access = os.getenv('HOST_ACCESS')
         for d in data:
             result.append({
-                'uuid': d['uuid'],
-                'cameraId': d['cameraId'],
-                'beginTime': d['beginTimeStamp'],
-                'endTime': d['endTimeStamp'],
-                'statusCode': d['statusCode'],
-                'video': f'http://{host_access}/video/{d["uuid"]}',
-                'thumbnail': f'http://{host_access}/thumbnail/{d["uuid"]}'
+                'uuid': d.uuid,
+                'cameraId': d.cameraId,
+                'beginTime': d.beginTimeStamp,
+                'endTime': d.endTimeStamp,
+                'statusCode': d.status,
+                'video': f'http://{host_access}/video/{d.uuid}',
+                'thumbnail': f'http://{host_access}/thumbnail/{d.uuid}',
+                'accuracy': d.accuracy
             })
         return result, HTTPStatus.OK
             
@@ -356,13 +356,13 @@ class GetCamera(Resource):
         if camera is None:
             return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
         user = db.getUserByToken(token)
-        if camera['username'] != user['username']:
+        if camera.username != user.username:
             return {'error': 'You do not have access to this camera'}, HTTPStatus.UNAUTHORIZED
         return {
-            'cameraId': camera['cameraId'],
-            'name': camera['cameraName'],
-            'username': camera['username'],
-            'status': camera['status']
+            'cameraId': camera.camera_id,
+            'name': camera.cameraName,
+            'username': camera.username,
+            'status': camera.status
         }, HTTPStatus.OK
     
 @camera_api.route('/getall')
@@ -378,14 +378,14 @@ class GetAllCamera(Resource):
         if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         user = db.getUserByToken(token)
-        cameras = db.getUserCameras(user['username'])
+        cameras = db.getUserCameras(user.username)
         result = []
         for camera in cameras:
             result.append({
-                'cameraId': camera['cameraId'],
-                'name': camera['cameraName'],
-                'username': camera['username'],
-                'status': camera['status']
+                'cameraId': camera.camera_id,
+                'name': camera.cameraName,
+                'username': camera.username,
+                'status': camera.status
             })
         return result, HTTPStatus.OK
     
@@ -408,7 +408,7 @@ class RenameCamera(Resource):
         if camera is None:
             return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
         user = db.getUserByToken(token)
-        if user['username'] != camera['username']:
+        if user.username != camera.username:
             return {'error': 'You do not have access to this camera'}, HTTPStatus.UNAUTHORIZED
         db.renameCamera(cameraId, name)
         return {'message': 'Camera renamed'}, HTTPStatus.OK
@@ -431,7 +431,7 @@ class DeleteCamera(Resource):
         if camera is None:
             return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
         user = db.getUserByToken(token)
-        if user['username'] != camera['username']:
+        if user.username != camera.username:
             return {'error': 'You do not have access to this camera'}, HTTPStatus.UNAUTHORIZED
         db.deleteCamera(cameraId)
         return {'message': 'Camera deleted'}, HTTPStatus.OK
@@ -452,7 +452,7 @@ class LinkCamera(Resource):
         if not auth:
             return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
         user = db.getUserByToken(token)
-        result = db.linkCamera(user['username'], linkingCode)
+        result = db.linkCamera(user.username, linkingCode)
         if result:
             return {'message': 'Camera linked'}, HTTPStatus.OK
         return {'error': 'Invalid linking code'}, HTTPStatus.BAD_REQUEST
@@ -469,5 +469,5 @@ class CheckCameraStatus(Resource):
         camera = db.getCamera(cameraId)
         if camera is None:
             return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
-        return {'cameraId': camera['cameraId'], 'status': camera['status']}, HTTPStatus.OK
+        return {'cameraId': camera.camera_id, 'status': camera.status}, HTTPStatus.OK
         

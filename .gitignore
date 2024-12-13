@@ -3,3 +3,5 @@ __pycache__/*
 *.pyc
 *.env
 iot-sdk-firebase.json
+thumbnails/*
+videos/*

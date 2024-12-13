@@ -5,6 +5,7 @@ from constant import DetectStatusCode as DSC, CameraStatusCode as CSC
 import time
 import os
 from dotenv import load_dotenv
+from .entities import *
 
 class Database(Singleton):
     
@@ -104,37 +105,17 @@ class Database(Singleton):
             cursor = collection.find({'username': username})
             return self._c2a(cursor)
     
-    def getUser(self, username: str) -> None|dict:
+    def getUser(self, username: str) -> None|User:
         user = self._getUser(username)
         if len(user) == 0:
             return None
-        realUser = user[0]
-        # Check if a array key exists
-        if 'fcm_token' not in realUser:
-            realUser['notification'] = True
-            realUser['monitoring'] = True
-            realUser['fcm_token'] = ""
-            self._insertNewData(realUser['username'])
-        return realUser
+        return User.fromDict(user[0])
     
-    @internal
-    def _insertNewData(self, username: str):
-        with self._connect() as client:
-            db = client[self.db_name]
-            collection = db['users']
-            collection.update_one({'username': username}, {'$set': {'notification': True, 'monitoring': True, 'fcm_token': ""}})
-    
-    def getUserByToken(self, loginToken: str) -> None|dict:
+    def getUserByToken(self, loginToken: str) -> None|User:
         user = self._getByToken(loginToken)
         if len(user) == 0:
             return None
-        realUser = user[0]
-        if 'fcm_token' not in realUser:
-            realUser['notification'] = True
-            realUser['monitoring'] = True
-            realUser['fcm_token'] = ""
-            self._insertNewData(realUser['username'])
-        return realUser
+        return User.fromDict(user[0])
         
     def changePassword(self, username: str, password: str):
         with self._connect() as client:
@@ -166,24 +147,12 @@ class Database(Singleton):
             db = client[self.db_name]
             collection = db['users']
             collection.update_one({'username': username}, {'$set': {'fcm_token': fcm_token}})
-    
-    def isNotificationEnabled(self, username: str) -> bool:
-        user = self.getUser(username)
-        if user is None:
-            return False
-        return user['notification']
-    
-    def isMonitoringEnabled(self, username: str) -> bool:
-        user = self.getUser(username)
-        if user is None:
-            return False
-        return user['monitoring']
-    
-    def getFCMToken(self, username: str) -> str:
-        user = self.getUser(username)
-        if user is None:
-            return ""
-        return user['fcm_token']
+            
+    def updateUser(self, user: User):
+        with self._connect() as client:
+            db = client[self.db_name]
+            collection = db['users']
+            collection.update_one({'username': user.username}, {'$set': user.toDict()})
     
     # CAMERA OPERATIONS
     def createCamera(self, cameraId: str, cameraName: str, username: str = "", linkCode: str = "", status: int = CSC.UNKNOWN):
@@ -213,18 +182,22 @@ class Database(Singleton):
             cursor = collection.find({'cameraId': cameraId})
             return self._c2a(cursor)
         
-    def getCamera(self, cameraId: str) -> None|dict:
+    def getCamera(self, cameraId: str) -> None|Camera:
         camera = self._getCamera(cameraId)
         if len(camera) == 0:
             return None
-        return camera[0]
-            
-    def getUserCameras(self, username: str) -> list:
+        return Camera.fromDict(camera[0])
+    
+    @internal        
+    def _getUserCameras(self, username: str) -> list:
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['cameras']
             cursor = collection.find({'username': username})
             return self._c2a(cursor)
+        
+    def getUserCameras(self, username: str) -> list:
+        return [Camera.fromDict(camera) for camera in self._getUserCameras(username)]
         
     def updateCameraStatus(self, cameraId: str, status: int):
         with self._connect() as client:
@@ -262,9 +235,15 @@ class Database(Singleton):
             db = client[self.db_name]
             collection = db['cameras']
             collection.delete_one({'cameraId': cameraId})
+            
+    def updateCamera(self, camera: Camera):
+        with self._connect() as client:
+            db = client[self.db_name]
+            collection = db['cameras']
+            collection.update_one({'cameraId': camera.camera_id}, {'$set': camera.toDict()})
     
     # Detect Data things
-    def insertDetectData(self, uuid: str, cameraId: str, beginTimeStamp: int, endTimeStamp: int, statusCode: int = DSC.UNKNOWN):
+    def insertDetectData(self, uuid: str, cameraId: str, beginTimeStamp: int, endTimeStamp: int, statusCode: int = DSC.UNKNOWN, accuracy: float = -1.0):
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['detect_data']
@@ -273,7 +252,8 @@ class Database(Singleton):
                 'cameraId': cameraId,
                 'beginTimeStamp': beginTimeStamp,
                 'endTimeStamp': endTimeStamp,
-                'statusCode': statusCode
+                'statusCode': statusCode,
+                'accuracy': accuracy
             })
     
     @internal
@@ -284,20 +264,25 @@ class Database(Singleton):
             cursor = collection.find({'uuid': uuid})
             return self._c2a(cursor)
         
-    def getDetectData(self, uuid: str) -> None|dict:
+    def getDetectData(self, uuid: str) -> None|Action:
         result = self._getDetectData(uuid)
         if len(result) == 0:
             return None
-        return result[0]
+        return Action.fromDict(result[0])
     
-    def getDetectDataByCameraId(self, cameraId: str) -> list:
+    @internal
+    def _getDetectDataByCameraId(self, cameraId: str) -> list:
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['detect_data']
             cursor = collection.find({'cameraId': cameraId}).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
         
-    def getDetectDataByUser(self, username: str) -> list:
+    def getDetectDataByCameraId(self, cameraId: str) -> list:
+        return [Action.fromDict(action) for action in self._getDetectDataByCameraId(cameraId)]
+    
+    @internal    
+    def _getDetectDataByUser(self, username: str) -> list:
         cameras = self.getUserCameras(username)
         if len(cameras) == 0:
             return []
@@ -308,6 +293,9 @@ class Database(Singleton):
                 {'cameraId': {'$in': [camera['cameraId'] for camera in cameras]}}
             ).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
+        
+    def getDetectDataByUser(self, username: str) -> list:
+        return [Action.fromDict(action) for action in self._getDetectDataByUser(username)]
         
     def updateDetectData(self, uuid: str, statusCode: int):
         with self._connect() as client:
@@ -320,8 +308,9 @@ class Database(Singleton):
             db = client[self.db_name]
             collection = db['detect_data']
             collection.delete_one({'uuid': uuid})
-            
-    def getDetectDataByTimeRange(self, beginTimeStamp: int, endTimeStamp: int) -> list:
+    
+    @internal        
+    def _getDetectDataByTimeRange(self, beginTimeStamp: int, endTimeStamp: int) -> list:
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['detect_data']
@@ -331,7 +320,11 @@ class Database(Singleton):
             }).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
         
-    def getUserDetectDataByTimeRange(self, username: str, beginTimeStamp: int, endTimeStamp: int) -> list:
+    def getDetectDataByTimeRange(self, beginTimeStamp: int, endTimeStamp: int) -> list:
+        return [Action.fromDict(action) for action in self._getDetectDataByTimeRange(beginTimeStamp, endTimeStamp)]
+        
+    @internal
+    def _getUserDetectDataByTimeRange(self, username: str, beginTimeStamp: int, endTimeStamp: int) -> list:
         cameras = self.getUserCameras(username)
         if len(cameras) == 0:
             return []
@@ -344,8 +337,12 @@ class Database(Singleton):
                 'endTimeStamp': {'$lte': endTimeStamp}
             }).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
-        
-    def getCameraDetectDatabyTimeRange(self, cameraId: str, beginTimeStamp: int, endTimeStamp: int) -> list:
+    
+    def getUserDetectDataByTimeRange(self, username: str, beginTimeStamp: int, endTimeStamp: int) -> list:
+        return [Action.fromDict(action) for action in self._getUserDetectDataByTimeRange(username, beginTimeStamp, endTimeStamp)]
+    
+    @internal    
+    def _getCameraDetectDataByTimeRange(self, cameraId: str, beginTimeStamp: int, endTimeStamp: int) -> list:
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['detect_data']
@@ -356,10 +353,24 @@ class Database(Singleton):
             }).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
         
-    def getDetectDataByStatusCode(self, statusCode: int) -> list:
+    def getCameraDetectDataByTimeRange(self, cameraId: str, beginTimeStamp: int, endTimeStamp: int) -> list:
+        return [Action.fromDict(action) for action in self._getCameraDetectDataByTimeRange(cameraId, beginTimeStamp, endTimeStamp)]
+    
+    @internal    
+    def _getDetectDataByStatusCode(self, statusCode: int) -> list:
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['detect_data']
             cursor = collection.find({'statusCode': statusCode}).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
+       
+    def getDetectDataByStatusCode(self, statusCode: int) -> list:
+        return [Action.fromDict(action) for action in self._getDetectDataByStatusCode(statusCode)]
+    
+    def updateAction(self, action: Action):
+        with self._connect() as client:
+            db = client[self.db_name]
+            collection = db['detect_data']
+            collection.update_one({'uuid': action.uuid}, {'$set': action.toDict()})
+            
     

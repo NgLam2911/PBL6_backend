@@ -10,6 +10,7 @@ report_parser.add_argument('cameraId', type=str, required=True, help='Camera ID'
 report_parser.add_argument('beginTime', type=int, required=True, help='Begin of reported action time in unix timestamp')
 report_parser.add_argument('endTime', type=int, required=True, help='End of reported action time in unix timestamp')
 report_parser.add_argument('sensitivity', type=int, required=True, help='Sensitivity of detection')
+report_parser.add_argument('accuracy', type=float, required=True, help='Accuracy of detection in percentage')
 
 detect_getAll_parser = reqparse.RequestParser()
 detect_getAll_parser.add_argument('token', type=str, required=True, help='Authentication token')

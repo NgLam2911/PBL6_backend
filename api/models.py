@@ -38,7 +38,8 @@ detectData_model = api.model('DetectData', {
     'endTime': fields.Integer(required=True, description='End of reported action time in unix timestamp'),
     'statusCode': fields.Integer(required=True, description='Status code'),
     'video': fields.String(required=True, description='Video link'),
-    'thumbnail': fields.String(required=True, description='Thumbnail link')
+    'thumbnail': fields.String(required=True, description='Thumbnail link'),
+    'accuracy': fields.Float(required=True, description='Accuracy of detection in percentage')
 })
 
 register_camera_model = api.model('RegisterCamera', {
