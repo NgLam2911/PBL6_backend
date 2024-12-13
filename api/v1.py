@@ -326,6 +326,29 @@ class GetDetectByTime(Resource):
                 'accuracy': d.accuracy
             })
         return result, HTTPStatus.OK
+    
+@detect_api.route('/deletedetect')
+@detect_api.doc(description='Delete a detect data')
+class DeleteDetect(Resource):
+    @detect_api.expect(parsers.detect_get_parser)
+    @detect_api.response(HTTPStatus.OK, 'Detect data deleted', models.success_model)
+    @detect_api.response(HTTPStatus.BAD_REQUEST, 'Invalid actionId', models.error_model)
+    @detect_api.response(HTTPStatus.UNAUTHORIZED, 'Authentication failed', models.authenticate_fail_model)
+    def delete(self):
+        args = parsers.detect_get_parser.parse_args()
+        token = args['token']
+        actionId = args['actionId']
+        auth = db.authenticate(token)
+        if not auth:
+            return {'error': 'Authentication failed'}, HTTPStatus.UNAUTHORIZED
+        action = db.getDetectData(actionId)
+        if action is None:
+            return {'error': 'Invalid actionId'}, HTTPStatus.BAD_REQUEST
+        user = db.getUserByToken(token)
+        if user.username != action.camera().username:
+            return {'error': 'You do not have access to this data'}, HTTPStatus.UNAUTHORIZED
+        db.deleteDetectData(actionId)
+        return {'message': 'Detect data deleted'}, HTTPStatus.OK
             
     
 @camera_api.route('/register')
