@@ -240,7 +240,7 @@ class Database(Singleton):
         with self._connect() as client:
             db = client[self.db_name]
             collection = db['cameras']
-            collection.update_one({'cameraId': camera.camera_id}, {'$set': camera.toDict()})
+            collection.update_one({'cameraId': camera.cameraId}, {'$set': camera.toDict()})
     
     # Detect Data things
     def insertDetectData(self, uuid: str, cameraId: str, beginTimeStamp: int, endTimeStamp: int, statusCode: int = DSC.UNKNOWN, accuracy: float = -1.0):
@@ -290,7 +290,7 @@ class Database(Singleton):
             db = client[self.db_name]
             collection = db['detect_data']
             cursor = collection.find(
-                {'cameraId': {'$in': [camera.camera_id for camera in cameras]}}
+                {'cameraId': {'$in': [camera.cameraId for camera in cameras]}}
             ).sort('beginTimeStamp', DESCENDING)
             return self._c2a(cursor)
         
@@ -332,7 +332,7 @@ class Database(Singleton):
             db = client[self.db_name]
             collection = db['detect_data']
             cursor = collection.find({
-                'cameraId': {'$in': [camera.camera_id for camera in cameras]},
+                'cameraId': {'$in': [camera.cameraId for camera in cameras]},
                 'beginTimeStamp': {'$gte': beginTimeStamp}, 
                 'endTimeStamp': {'$lte': endTimeStamp}
             }).sort('beginTimeStamp', DESCENDING)

@@ -359,7 +359,7 @@ class GetCamera(Resource):
         if camera.username != user.username:
             return {'error': 'You do not have access to this camera'}, HTTPStatus.UNAUTHORIZED
         return {
-            'cameraId': camera.camera_id,
+            'cameraId': camera.cameraId,
             'name': camera.cameraName,
             'username': camera.username,
             'status': camera.status
@@ -382,7 +382,7 @@ class GetAllCamera(Resource):
         result = []
         for camera in cameras:
             result.append({
-                'cameraId': camera.camera_id,
+                'cameraId': camera.cameraId,
                 'name': camera.cameraName,
                 'username': camera.username,
                 'status': camera.status
@@ -469,5 +469,5 @@ class CheckCameraStatus(Resource):
         camera = db.getCamera(cameraId)
         if camera is None:
             return {'error': 'Invalid cameraId'}, HTTPStatus.BAD_REQUEST
-        return {'cameraId': camera.camera_id, 'status': camera.status}, HTTPStatus.OK
+        return {'cameraId': camera.cameraId, 'status': camera.status}, HTTPStatus.OK
         

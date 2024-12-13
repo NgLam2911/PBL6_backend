@@ -62,12 +62,12 @@ class User:
     
 class Camera:
     def __init__(self, 
-                camera_id: str,
+                cameraId: str,
                 cameraName: str = "",
                 username: str = "",
                 linkCode: str = "",
                 status: int = CSC.UNKNOWN):
-        self.camera_id = camera_id
+        self.cameraId = cameraId
         self.cameraName = cameraName
         self.username = username
         self.linkCode = linkCode
@@ -75,9 +75,9 @@ class Camera:
     
     @staticmethod
     def fromDict(d: dict):
-        fields = ["camera_id", "cameraName", "username", "linkCode", "status"]
+        fields = ["cameraId", "cameraName", "username", "linkCode", "status"]
         values = {
-            "camera_id": "",
+            "cameraId": "",
             "cameraName": "",
             "username": "",
             "linkCode": "",
@@ -90,7 +90,7 @@ class Camera:
     
     def toDict(self):
         return {
-            "camera_id": self.camera_id,
+            "cameraId": self.cameraId,
             "cameraName": self.cameraName,
             "username": self.username,
             "linkCode": self.linkCode,
@@ -98,15 +98,15 @@ class Camera:
         }
         
     def __str__(self):
-        return f"camera: {self.camera_id}"
+        return f"camera: {self.cameraId}"
     
     def __eq__(self, other):
         if not isinstance(other, Camera):
             return False
-        return self.camera_id == other.camera_id
+        return self.cameraId == other.cameraId
     
     def __hash__(self):
-        return hash(self.camera_id)
+        return hash(self.cameraId)
     
     def user(self) -> None|User:
         from dbs import Database
