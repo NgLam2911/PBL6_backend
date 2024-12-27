@@ -130,7 +130,7 @@ class Action:
         
     @staticmethod
     def fromDict(d: dict):
-        fields = ["uuid", "cameraId", "beginTimeStamp", "endTimeStamp", "status"]
+        fields = ["uuid", "cameraId", "beginTimeStamp", "endTimeStamp", "status", "accuracy"]
         values = {
             "uuid": "",
             "cameraId": "",
